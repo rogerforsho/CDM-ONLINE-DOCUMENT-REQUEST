@@ -1,0 +1,728 @@
+﻿@page
+@model ProjectCapstone.Pages.Dashboard.AdminModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CDM Document Queue</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: white;
+            padding: 10px;
+        }
+
+            .sidebar-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        .sidebar-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            opacity: 0.8;
+            margin: 5px 0 0 0;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+            .nav-link:hover, .nav-link.active {
+                background: rgba(255,255,255,0.2);
+                transform: translateX(5px);
+            }
+
+            .nav-link i {
+                margin-right: 12px;
+                width: 20px;
+            }
+
+        .logout-btn {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .alert-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+            .alert-message.error {
+                background: #f8d7da;
+                color: #721c24;
+                border-left-color: #dc3545;
+            }
+
+            .alert-message button {
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                margin-left: auto;
+            }
+
+        .section-content {
+            display: none;
+        }
+
+            .section-content.active {
+                display: block;
+            }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card.pending .stat-icon {
+            background: #fff3cd;
+            color: #f39c12;
+        }
+
+        .stat-card.processing .stat-icon {
+            background: #d1ecf1;
+            color: #17a2b8;
+        }
+
+        .stat-card.ready .stat-icon {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .stat-card.total .stat-icon {
+            background: #e7e3fc;
+            color: #667eea;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .document-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+            .document-card:hover {
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+                transform: translateX(5px);
+            }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .document-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .queue-badge {
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .document-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+
+        .info-item {
+            color: #718096;
+        }
+
+            .info-item strong {
+                color: #2d3748;
+            }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+
+            .btn-action:hover {
+                transform: translateY(-2px);
+            }
+
+        .btn-view {
+            background: #e7e3fc;
+            color: #667eea;
+        }
+
+            .btn-view:hover {
+                background: #667eea;
+                color: white;
+            }
+
+        .btn-complete {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+            .btn-complete:hover {
+                background: #28a745;
+                color: white;
+            }
+
+        .btn-reject {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+            .btn-reject:hover {
+                background: #dc3545;
+                color: white;
+            }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+            .chart-container h5 {
+                margin-bottom: 20px;
+                color: #2d3748;
+                font-weight: 700;
+            }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+            .empty-state i {
+                font-size: 64px;
+                opacity: 0.3;
+                margin-bottom: 20px;
+            }
+
+        @@keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @@media (max-width: 1200px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="~/images/cdm-logo.png" alt="CDM Logo">
+            </div>
+            <h3>CDM Document Request</h3>
+            <p>Admin Portal</p>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'overview'); return false;">
+                    <i class="fas fa-home"></i> Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="showSection(event, 'requests'); return false;">
+                    <i class="fas fa-list"></i> All Requests
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'analytics'); return false;">
+                    <i class="fas fa-chart-pie"></i> Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'students'); return false;">
+                    <i class="fas fa-users"></i> Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'history'); return false;">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-btn">
+            <a href="/Logout" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div>
+                <h2 style="font-size: 24px; font-weight: 700; color: #2d3748; margin: 0;">
+                    Admin Dashboard <span class="admin-badge">ADMINISTRATOR</span>
+                </h2>
+                <p style="color: #718096; margin: 5px 0 0 0; font-size: 14px;">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-weight: 600; color: #2d3748;">@Model.FullName</div>
+                <div style="font-size: 13px; color: #718096;">@Model.Email</div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert-message">
+                <i class="fas fa-check-circle" style="font-size: 20px;"></i>
+                <span style="flex: 1;">@Model.SuccessMessage</span>
+                <button onclick="this.parentElement.style.display='none'">&times;</button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert-message error">
+                <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
+                <span style="flex: 1;">@Model.ErrorMessage</span>
+                <button onclick="this.parentElement.style.display='none'">&times;</button>
+            </div>
+        }
+
+        <!-- OVERVIEW SECTION -->
+        <div id="overview-section" class="section-content">
+            <div class="stats-grid">
+                <div class="stat-card pending">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value">@Model.PendingCount</div>
+                    <div class="stat-label">Pending Requests</div>
+                </div>
+                <div class="stat-card processing">
+                    <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                    <div class="stat-value">@Model.ProcessingCount</div>
+                    <div class="stat-label">Processing</div>
+                </div>
+                <div class="stat-card ready">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-value">@Model.ReadyCount</div>
+                    <div class="stat-label">Ready for Pickup</div>
+                </div>
+                <div class="stat-card total">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value">@Model.TotalRequests</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALL REQUESTS SECTION -->
+        <div id="requests-section" class="section-content active">
+            <h3 class="section-title">Document Requests</h3>
+            @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
+            {
+                foreach (var doc in Model.AllRequests)
+                {
+                    <div class="document-card">
+                        <div class="document-header">
+                            <div>
+                                <h4 class="document-title">@doc.DocumentType</h4>
+                                <span class="queue-badge"># @doc.QueueNumber</span>
+                            </div>
+                            <div>
+                                @if (doc.Status == "Pending")
+                                {
+                                    <span style="background: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⏳ PENDING</span>
+                                }
+                                else if (doc.Status == "Processing")
+                                {
+                                    <span style="background: #d1ecf1; color: #0c5460; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⚙️ PROCESSING</span>
+                                }
+                                else if (doc.Status == "Ready")
+                                {
+                                    <span style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">✅ READY</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="document-info">
+                            <div class="info-item"><strong>Student:</strong> @doc.StudentName</div>
+                            <div class="info-item"><strong>Student #:</strong> @doc.StudentNumber</div>
+                            <div class="info-item"><strong>Purpose:</strong> @doc.Purpose</div>
+                            <div class="info-item"><strong>Copies:</strong> @doc.Quantity</div>
+                            <div class="info-item"><strong>Requested:</strong> @doc.RequestDate.ToString("yyyy-MM-dd")</div>
+                            <div class="info-item"><strong>Email:</strong> @doc.StudentEmail</div>
+                        </div>
+                        <div class="action-buttons">
+                            @if (doc.Status == "Pending")
+                            {
+                                <form method="post" asp-page-handler="UpdateStatus" style="display: inline;">
+                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
+                                    <input type="hidden" name="newStatus" value="Processing" />
+                                    <button type="submit" class="btn-action" style="background: #d1ecf1; color: #0c5460;">
+                                        <i class="fas fa-cog"></i> Start Processing
+                                    </button>
+                                </form>
+                            }
+                            @if (doc.Status == "Processing")
+                            {
+                                <form method="post" asp-page-handler="MarkReady" style="display: inline;" onsubmit="return confirm('✅ Mark as READY for @doc.StudentName?\n\n📧 Email will be sent to: @doc.StudentEmail')">
+                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
+                                    <button type="submit" class="btn-action btn-complete">
+                                        <i class="fas fa-check"></i> Mark Ready & Send Email
+                                    </button>
+                                </form>
+                            }
+                            @if (doc.Status == "Ready")
+                            {
+                                <form method="post" asp-page-handler="MarkCompleted" style="display: inline;" onsubmit="return confirm('Mark as completed?')">
+                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
+                                    <button type="submit" class="btn-action btn-complete">
+                                        <i class="fas fa-check-double"></i> Mark Completed
+                                    </button>
+                                </form>
+                            }
+                            <form method="post" asp-page-handler="UpdateStatus" style="display: inline;" onsubmit="return confirm('Cancel this request?')">
+                                <input type="hidden" name="requestId" value="@doc.RequestId" />
+                                <input type="hidden" name="newStatus" value="Cancelled" />
+                                <button type="submit" class="btn-action btn-reject">
+                                    <i class="fas fa-ban"></i> Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h4>No Pending Requests</h4>
+                    <p>All clear! No requests to process at the moment.</p>
+                </div>
+            }
+        </div>
+
+        <!-- ANALYTICS SECTION -->
+        <div id="analytics-section" class="section-content">
+            <h3 class="section-title"><i class="fas fa-chart-pie"></i> Document Request Analytics</h3>
+            <div class="analytics-grid">
+                <div class="chart-container">
+                    <h5>Most Requested Documents</h5>
+                    <div class="chart-wrapper"><canvas id="documentPieChart"></canvas></div>
+                </div>
+                <div class="chart-container">
+                    <h5>Request Status Distribution</h5>
+                    <div class="chart-wrapper"><canvas id="statusBarChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENTS SECTION -->
+        <div id="students-section" class="section-content">
+            <h3 class="section-title"><i class="fas fa-users"></i> Students Who Requested Documents</h3>
+            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                @if (Model.AllRequests != null && Model.AllRequests.Any())
+                {
+                    var uniqueStudents = Model.AllRequests.GroupBy(r => r.StudentNumber)
+                    .Select(g => new { StudentNumber = g.Key, StudentName = g.First().StudentName, Email = g.First().StudentEmail, RequestCount = g.Count(), LastRequest = g.Max(r => r.RequestDate) })
+                    .OrderByDescending(s => s.RequestCount).ToList();
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Student #</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Name</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Email</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Requests</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Last Request</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in uniqueStudents)
+                            {
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 12px;"><strong>@student.StudentNumber</strong></td>
+                                    <td style="padding: 12px;">@student.StudentName</td>
+                                    <td style="padding: 12px;"><small>@student.Email</small></td>
+                                    <td style="padding: 12px;">
+                                        <span style="background: #e7e3fc; color: #667eea; padding: 4px 10px; border-radius: 12px; font-weight: 600;">@student.RequestCount</span>
+                                    </td>
+                                    <td style="padding: 12px;">@student.LastRequest.ToString("MMM dd, yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state"><i class="fas fa-user-slash"></i><h4>No Students Yet</h4><p>No students have made requests yet.</p></div>
+                }
+            </div>
+        </div>
+
+        <!-- HISTORY SECTION -->
+        <div id="history-section" class="section-content">
+            <h3 class="section-title"><i class="fas fa-history"></i> Request History</h3>
+            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                @if (Model.HistoryDocuments != null && Model.HistoryDocuments.Count > 0)
+                {
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Queue #</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Student</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Document</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Requested</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Completed</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in Model.HistoryDocuments)
+                            {
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 12px;"><strong>@doc.QueueNumber</strong></td>
+                                    <td style="padding: 12px;">@doc.StudentName</td>
+                                    <td style="padding: 12px;">@doc.DocumentType</td>
+                                    <td style="padding: 12px;">@doc.RequestDate.ToString("MMM dd, yyyy")</td>
+                                    <td style="padding: 12px;">@(doc.ReadyDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                    <td style="padding: 12px;">
+                                        @if (doc.Status == "Completed")
+                                        {
+                                            <span style="background: #d1ecf1; color: #004085; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">✓ Completed</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">✗ Cancelled</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state"><i class="fas fa-history"></i><h4>No History</h4><p>Completed requests will appear here.</p></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(event, sectionName) {
+            if (event) { event.preventDefault(); event.stopPropagation(); }
+            document.querySelectorAll('.section-content').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            const target = document.getElementById(sectionName + '-section');
+            if (target) { target.classList.add('active'); target.style.display = 'block'; }
+            if (event && event.target) { event.target.closest('.nav-link').classList.add('active'); }
+            if (sectionName === 'analytics') { setTimeout(initCharts, 200); }
+            return false;
+        }
+
+        function initCharts() {
+            const pieCtx = document.getElementById('documentPieChart').getContext('2d');
+            new Chart(pieCtx, {
+                type: 'pie',
+                data: { labels: ['TOR', 'Certificate', 'Diploma'], datasets: [{ data: [10, 15, 5], backgroundColor: ['#667eea', '#f093fb', '#4facfe'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+            const barCtx = document.getElementById('statusBarChart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: { labels: ['Pending', 'Processing', 'Ready', 'Completed'], datasets: [{ label: 'Requests', data: [@Model.PendingCount, @Model.ProcessingCount, @Model.ReadyCount, 5], backgroundColor: ['#f39c12', '#17a2b8', '#28a745', '#007bff'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+    </script>
+</body>
+</html>

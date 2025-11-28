@@ -1,0 +1,1072 @@
+﻿@page
+@model ProjectCapstone.Pages.Dashboard.StudentModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - CDM Document Queue</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo {
+            width: 150px;
+            height: 150x;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #0d5c2f padding: 5px;
+            border: #0d5c2f;
+        }
+
+            .sidebar-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+        .sidebar-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .sidebar-header p {
+            font-size: 13px;
+            opacity: 0.8;
+            margin: 5px 0 0 0;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+            .nav-link:hover, .nav-link.active {
+                background: rgba(255,255,255,0.2);
+                transform: translateX(5px);
+            }
+
+            .nav-link i {
+                margin-right: 12px;
+                width: 20px;
+            }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .welcome-text h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .welcome-text p {
+            color: #718096;
+            margin: 5px 0 0 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card.pending .stat-icon {
+            background: #fff3cd;
+            color: #f39c12;
+        }
+
+        .stat-card.processing .stat-icon {
+            background: #d1ecf1;
+            color: #17a2b8;
+        }
+
+        .stat-card.ready .stat-icon {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .stat-card.total .stat-icon {
+            background: #d4edda;
+            color: #0d5c2f;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .content-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f5f7fa;
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+            .btn-primary-custom:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(13, 92, 47, 0.3);
+            }
+
+        .table-custom {
+            width: 100%;
+        }
+
+            .table-custom th {
+                background: #f5f7fa;
+                padding: 15px;
+                font-weight: 600;
+                color: #2d3748;
+                border: none;
+            }
+
+            .table-custom td {
+                padding: 15px;
+                vertical-align: middle;
+                border-bottom: 1px solid #f5f7fa;
+            }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-processing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-completed {
+            background: #d1ecf1;
+            color: #004085;
+        }
+
+        .badge-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+            .empty-state i {
+                font-size: 64px;
+                margin-bottom: 20px;
+                opacity: 0.3;
+            }
+
+        /* Profile Section */
+        .profile-section {
+            display: none;
+        }
+
+            .profile-section.active {
+                display: block;
+            }
+
+        .profile-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .profile-header {
+            margin-bottom: 30px;
+        }
+
+        .profile-info {
+            margin-bottom: 25px;
+        }
+
+        .profile-label {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .profile-value {
+            font-size: 16px;
+            color: #2d3748;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Request Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal.active {
+                display: flex;
+            }
+
+        .modal-content {
+            background: white;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: #1a5f3f;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .modal-header h3 {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #2d3748;
+                font-size: 14px;
+            }
+
+                .form-group label .required {
+                    color: #e53e3e;
+                }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+            .form-control-custom:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            .form-control-custom::placeholder {
+                color: #a0aec0;
+            }
+
+        select.form-control-custom {
+            cursor: pointer;
+        }
+
+        .processing-time {
+            background: #e6f7f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+            .processing-time p {
+                margin: 5px 0;
+                font-size: 13px;
+                color: #2d5a47;
+            }
+
+            .processing-time strong {
+                color: #1a5f3f;
+            }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: #1a5f3f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+            .btn-submit:hover {
+                background: #145035;
+                transform: translateY(-2px);
+            }
+
+        .btn-cancel {
+            width: 100%;
+            padding: 15px;
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+            .btn-cancel:hover {
+                background: #cbd5e0;
+            }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="/images/cdm-logo.png" alt="CDM Logo" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iIzBkNWMyZiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjI0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkNETTwvdGV4dD48L3N2Zz4=';">
+            </div>
+            <h3>CDM Document Request</h3>
+            <p>Student Portal</p>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="showSection(event, 'dashboard'); return false;">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'requests'); return false;">
+                    <i class="fas fa-file-alt"></i>
+                    My Requests
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'newrequest'); return false;">
+                    <i class="fas fa-plus-circle"></i>
+                    New Request
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'history'); return false;">
+                    <i class="fas fa-history"></i>
+                    History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'profile'); return false;">
+                    <i class="fas fa-user"></i>
+                    Profile
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-btn">
+            <a href="/Logout" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="welcome-text">
+                <h2>Welcome back, @Model.FullName!</h2>
+                <p>@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+            </div>
+            <div class="user-info">
+                <div>
+                    <div style="font-weight: 600; text-align: right;">@Model.FullName</div>
+                    <div style="font-size: 13px; color: #718096; text-align: right;">@Model.StudentNumber</div>
+                </div>
+                <div class="user-avatar">
+                    @Model.FullName.Substring(0, 1)
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="profile-section active">
+            <div class="stats-grid">
+                <div class="stat-card pending">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value" id="pending-count">@Model.PendingCount</div>
+                    <div class="stat-label">Pending Requests</div>
+                </div>
+
+                <div class="stat-card processing">
+                    <div class="stat-icon">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                    <div class="stat-value" id="processing-count">@Model.ProcessingCount</div>
+                    <div class="stat-label">Processing</div>
+                </div>
+
+                <div class="stat-card ready">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value" id="ready-count">@Model.ReadyCount</div>
+                    <div class="stat-label">Ready for Pickup</div>
+                </div>
+
+                <div class="stat-card total">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-value" id="total-count">@Model.TotalRequests</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Document Requests</h3>
+                    <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')">
+                        <i class="fas fa-plus me-2"></i>New Request
+                    </button>
+                </div>
+
+                @if (Model.RecentRequests != null && Model.RecentRequests.Count > 0)
+                {
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Queue #</th>
+                                <th>Document Type</th>
+                                <th>Purpose</th>
+                                <th>Date Requested</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.RecentRequests)
+                            {
+                                <tr>
+                                    <td><strong>@request.QueueNumber</strong></td>
+                                    <td>@request.DocumentType</td>
+                                    <td>@request.Purpose</td>
+                                    <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                    <td>
+                                        <span class="badge-status badge-@request.Status.ToLower()">
+                                            @request.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>No document requests yet</h4>
+                        <p>Click "New Request" to submit your first document request</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile-section" class="profile-section">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h2 style="color: #2d3748; margin-bottom: 10px;">My Profile</h2>
+                </div>
+
+                <div class="profile-info">
+                    <div class="profile-label">Student ID</div>
+                    <div class="profile-value">@Model.StudentNumber</div>
+                </div>
+
+                <div class="profile-info">
+                    <div class="profile-label">Full Name</div>
+                    <div class="profile-value">@Model.FullName</div>
+                </div>
+
+                <div class="profile-info">
+                    <div class="profile-label">Email Address</div>
+                    <div class="profile-value">@HttpContext.Session.GetString("Email")</div>
+                </div>
+
+                <div class="profile-info">
+                    <div class="profile-label">Course</div>
+                    <div class="profile-value">BS Computer Science</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Request Section -->
+        <div id="newrequest-section" class="profile-section">
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">Request a Document</h3>
+                </div>
+
+                <form id="requestForm" onsubmit="submitRequest(event)">
+                    <div class="form-group">
+                        <label>Document Type <span class="required">*</span></label>
+                        <select class="form-control-custom" id="documentType" required>
+                            <option value="">Select document type</option>
+                            <option value="Transcript of Records (TOR)">Transcript of Records (TOR)</option>
+                            <option value="Certificate of Enrollment">Certificate of Enrollment</option>
+                            <option value="Certificate of Grades">Certificate of Grades</option>
+                            <option value="Certification of Graduation (COG)">Certification of Graduation (COG)</option>
+                            <option value="Good Moral Certificate">Good Moral Certificate</option>
+                            <option value="Form 137">Form 137</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="Honorable Dismissal">Honorable Dismissal</option>
+                            <option value="Certification, Authentication & Verification (CAV)">Certification, Authentication & Verification (CAV)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Purpose <span class="required">*</span></label>
+                        <input type="text" class="form-control-custom" id="purpose"
+                               placeholder="e.g., Job Application, Transfer, Scholarship" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Number of Copies <span class="required">*</span></label>
+                        <input type="number" class="form-control-custom" id="copies"
+                               min="1" max="10" value="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Delivery Method <span class="required">*</span></label>
+                        <select class="form-control-custom" id="deliveryMethod" required>
+                            <option value="">Select delivery method</option>
+                            <option value="Pick-up">Pick-up at Registrar Office</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Additional Notes (Optional)</label>
+                        <textarea class="form-control-custom" id="notes" rows="3"
+                                  placeholder="Any special instructions or additional information"></textarea>
+                    </div>
+
+                    <div class="processing-time">
+                        <p><strong>Processing Time:</strong></p>
+                        <p>Regular documents: 3-5 business days</p>
+                        <p>Rush processing: 1-2 business days (additional fee applies)</p>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit Request
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="showSection(event, 'dashboard')">
+                        Cancel
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- My Requests Section -->
+        <div id="requests-section" class="profile-section">
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">My Document Requests</h3>
+                </div>
+
+                @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
+                {
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Queue #</th>
+                                <th>Document Type</th>
+                                <th>Purpose</th>
+                                <th>Copies</th>
+                                <th>Date Requested</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.AllRequests)
+                            {
+                                <tr>
+                                    <td><strong>@request.QueueNumber</strong></td>
+                                    <td>@request.DocumentType</td>
+                                    <td>@request.Purpose</td>
+                                    <td>@request.Quantity</td>
+                                    <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+                                    <td>
+                                        <span class="badge-status badge-@request.Status.ToLower()">
+                                            @request.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>No requests found</h4>
+                        <p>You haven't made any document requests yet</p>
+                        <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')" style="margin-top: 20px;">
+                            <i class="fas fa-plus me-2"></i>Create Your First Request
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" class="profile-section">
+            <div class="content-card">
+                <div class="card-header">
+                    <h3 class="card-title">Request History</h3>
+                </div>
+
+                @if (Model.HistoryRequests != null && Model.HistoryRequests.Count > 0)
+                {
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Queue #</th>
+                                <th>Document Type</th>
+                                <th>Purpose</th>
+                                <th>Copies</th>
+                                <th>Requested</th>
+                                <th>Completed</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var request in Model.HistoryRequests)
+                            {
+                                <tr>
+                                    <td><strong>@request.QueueNumber</strong></td>
+                                    <td>@request.DocumentType</td>
+                                    <td>@request.Purpose</td>
+                                    <td>@request.Quantity</td>
+                                    <td>@request.RequestDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@(request.CompletedDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                    <td>
+                                        <span class="badge-status badge-@request.Status.ToLower()">
+                                            @request.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h4>No history yet</h4>
+                        <p>Completed and cancelled requests will appear here</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        console.log('🔍 Script loaded - checking sections...');
+
+        // Check if sections exist
+        const sections = ['dashboard', 'profile', 'newrequest', 'requests', 'history'];
+        sections.forEach(section => {
+            const elem = document.getElementById(section + '-section');
+            if (elem) {
+                console.log('✅ Found section:', section + '-section');
+            } else {
+                console.error('❌ Missing section:', section + '-section');
+            }
+        });
+
+        function showSection(event, sectionName) {
+            console.log('🎯 showSection called with:', sectionName);
+
+            // Prevent default action
+            if (event) {
+                event.preventDefault();
+            }
+
+            // Hide all sections
+            const allSections = document.querySelectorAll('.profile-section');
+            console.log('📦 Found sections:', allSections.length);
+
+            allSections.forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show target section
+            const targetSection = document.getElementById(sectionName + '-section');
+            if (targetSection) {
+                targetSection.classList.add('active');
+                console.log('✅ Showing section:', sectionName);
+            } else {
+                console.error('❌ Section not found:', sectionName + '-section');
+                alert('Error: Section "' + sectionName + '" not found. Please check the console.');
+                return;
+            }
+
+            // Add active class to clicked nav link
+            if (event && event.target) {
+                const clickedLink = event.target.closest('.nav-link');
+                if (clickedLink) {
+                    clickedLink.classList.add('active');
+                }
+            }
+        }
+
+        async function submitRequest(event) {
+            event.preventDefault();
+
+            const formData = {
+                documentType: document.getElementById('documentType').value,
+                purpose: document.getElementById('purpose').value,
+                quantity: parseInt(document.getElementById('copies').value),
+                deliveryMethod: document.getElementById('deliveryMethod').value,
+                notes: document.getElementById('notes').value || ''
+            };
+
+            console.log('Submitting request:', formData);
+
+            try {
+                const response = await fetch('/api/DocumentRequest/Submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('✅ Request submitted successfully!\n\nYour queue number is: ' + result.queueNumber);
+
+                    // Reset form
+                    document.getElementById('requestForm').reset();
+
+                    // Update stats
+                    await updateStats();
+
+                    // Go back to dashboard
+                    const fakeEvent = { preventDefault: () => {}, target: document.querySelector('.nav-link') };
+                    showSection(fakeEvent, 'dashboard');
+
+                    // Reload to show updated data
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('❌ Failed to submit request: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ An error occurred: ' + error.message);
+            }
+        }
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/DocumentRequest/Stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('pending-count').textContent = stats.pending;
+                    document.getElementById('processing-count').textContent = stats.processing;
+                    document.getElementById('ready-count').textContent = stats.ready;
+                    document.getElementById('total-count').textContent = stats.total;
+                    console.log('✅ Stats updated:', stats);
+                }
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        async function loadAllRequests() {
+            const container = document.getElementById('all-requests-container');
+
+            // Show loading message
+            container.innerHTML = '<p style="text-align: center; color: #718096; padding: 40px;">⏳ Loading requests...</p>';
+
+            console.log('📂 Loading all requests...');
+
+            try {
+                const response = await fetch('/api/DocumentRequest/MyRequests');
+
+                console.log('📡 API Response Status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const requests = await response.json();
+                console.log('✅ Loaded requests:', requests);
+                console.log('📊 Number of requests:', requests.length);
+
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h4>No requests found</h4>
+                            <p>You haven't made any document requests yet</p>
+                            <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')" style="margin-top: 20px;">
+                                <i class="fas fa-plus me-2"></i>Create Your First Request
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Queue #</th>
+                                    <th>Document Type</th>
+                                    <th>Purpose</th>
+                                    <th>Copies</th>
+                                    <th>Date Requested</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${requests.map(req => `
+                                    <tr>
+                                        <td><strong>${req.queueNumber}</strong></td>
+                                        <td>${req.documentType}</td>
+                                        <td>${req.purpose}</td>
+                                        <td>${req.quantity}</td>
+                                        <td>${new Date(req.requestDate).toLocaleString()}</td>
+                                        <td>
+                                            <span class="badge-status badge-${req.status.toLowerCase()}">
+                                                ${req.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ Error loading requests:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e53e3e; margin-bottom: 20px;"></i>
+                        <h4 style="color: #e53e3e;">Error Loading Requests</h4>
+                        <p style="color: #718096;">${error.message}</p>
+                        <p style="color: #999; font-size: 12px; margin-top: 10px;">
+                            Check the browser console (F12) for more details
+                        </p>
+                        <button class="btn-cancel" onclick="loadAllRequests()" style="margin-top: 20px; width: auto; padding: 10px 30px;">
+                            <i class="fas fa-redo me-2"></i>Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
