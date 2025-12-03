@@ -1,13 +1,26 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
-using MySql.Data.MySqlClient;
-using ProjectCapstone.Services; // Add this for EmailService
+using ProjectCapstone.Services;
+using ProjectCapstone.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure MongoDB Settings
+builder.Services.Configure<MongoDBSettings>(
+    builder.Configuration.GetSection("MongoDBSettings"));
+
+// Add MongoDB connection string to settings
+builder.Services.Configure<MongoDBSettings>(options =>
+{
+    options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+});
+
+// Register MongoDB Service
+builder.Services.AddSingleton<MongoDBService>();
+
 // Add services to the container
 builder.Services.AddRazorPages();
-builder.Services.AddControllers(); // Add this for API controllers
-builder.Services.AddHttpContextAccessor(); // Add this for session access in API
+builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -33,13 +46,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// Add MySQL connection as singleton
-builder.Services.AddSingleton<MySqlConnection>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    return new MySqlConnection(configuration.GetConnectionString("DefaultConnection"));
-});
-
 // Add anti-forgery token
 builder.Services.AddAntiforgery(options =>
 {
@@ -57,7 +63,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
@@ -73,5 +78,7 @@ app.MapGet("/", context =>
 
 app.MapControllers();
 app.MapRazorPages();
+
+
 
 app.Run();

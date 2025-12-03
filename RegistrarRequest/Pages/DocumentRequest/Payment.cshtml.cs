@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using ProjectCapstone.Helpers;
 using ProjectCapstone.Models;
-using System.Data;
-using ProjectCapstone.Models;
-
+using ProjectCapstone.Services;
 
 namespace ProjectCapstone.Pages.DocumentRequest
 {
     public class PaymentModel : PageModel
     {
-        private readonly DatabaseHelper _dbHelper;
+        private readonly MongoDBService _mongoDBService;
         private readonly ILogger<PaymentModel> _logger;
         private readonly IWebHostEnvironment _environment;
 
@@ -35,14 +32,12 @@ namespace ProjectCapstone.Pages.DocumentRequest
         [TempData]
         public string SuccessMessage { get; set; } = string.Empty;
 
-        public ProjectCapstone.Models.DocumentRequest? Request { get; set; }
+        public Models.DocumentRequest? Request { get; set; }
+        public Payment? ExistingPayment { get; set; }
 
-        public ProjectCapstone.Models.Payment? ExistingPayment { get; set; }
-
-
-        public PaymentModel(IConfiguration configuration, ILogger<PaymentModel> logger, IWebHostEnvironment environment)
+        public PaymentModel(MongoDBService mongoDBService, ILogger<PaymentModel> logger, IWebHostEnvironment environment)
         {
-            _dbHelper = new DatabaseHelper(configuration);
+            _mongoDBService = mongoDBService;
             _logger = logger;
             _environment = environment;
         }
@@ -55,7 +50,6 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return RedirectToPage("/Login");
             }
 
-            // Load request details
             await LoadRequestDetails(userId.Value);
 
             if (Request == null)
@@ -64,15 +58,12 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return Page();
             }
 
-            // Load existing payment if any
             await LoadExistingPayment();
 
-            // Prefill form fields from existing payment if present
             if (ExistingPayment != null)
             {
                 PaymentMethod = ExistingPayment.PaymentMethod ?? string.Empty;
                 ReferenceNumber = ExistingPayment.ReferenceNumber ?? string.Empty;
-                // Notes left as-is; you may consider showing ExistingPayment.PaymentDate etc. in view
             }
 
             return Page();
@@ -86,7 +77,6 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return RedirectToPage("/Login");
             }
 
-            // Load request first to validate
             await LoadRequestDetails(userId.Value);
             if (Request == null)
             {
@@ -94,10 +84,8 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return Page();
             }
 
-            // Load existing payment (if any)
             await LoadExistingPayment();
 
-            // Basic form validation
             if (!ModelState.IsValid || PaymentProofFile == null)
             {
                 ErrorMessage = "Please fill in all required fields and upload payment proof.";
@@ -118,14 +106,14 @@ namespace ProjectCapstone.Pages.DocumentRequest
                     return Page();
                 }
 
-                if (PaymentProofFile.Length > 5 * 1024 * 1024) // 5MB
+                if (PaymentProofFile.Length > 5 * 1024 * 1024)
                 {
                     ErrorMessage = "File size must be less than 5MB.";
                     await LoadRequestDetails(userId.Value);
                     return Page();
                 }
 
-                // Create uploads directory if it doesn't exist
+                // Create uploads directory
                 var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "receipts");
                 if (!Directory.Exists(uploadsPath))
                 {
@@ -133,7 +121,7 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 }
 
                 // Generate unique filename
-                var fileName = $"{RequestId}_{DateTime.Now:yyyyMMddHHmmss}{fileExtension}";
+                var fileName = $"{RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
                 var filePath = Path.Combine(uploadsPath, fileName);
                 var relativeFilePath = $"/uploads/receipts/{fileName}";
 
@@ -143,87 +131,59 @@ namespace ProjectCapstone.Pages.DocumentRequest
                     await PaymentProofFile.CopyToAsync(stream);
                 }
 
-                // Get request amount (re-read to ensure accuracy)
-                var amountQuery = "SELECT TotalAmount FROM documentrequests WHERE RequestId = @RequestId";
-                var amountParams = new Dictionary<string, object> { { "@RequestId", RequestId } };
-                var amountResult = await _dbHelper.ExecuteQueryAsync(amountQuery, amountParams);
-                var amount = Convert.ToDecimal(amountResult.Rows[0]["TotalAmount"]);
-
                 if (ExistingPayment != null)
                 {
-                    // If payment already verified, do not allow updates
                     if (string.Equals(ExistingPayment.Status, "Verified", StringComparison.OrdinalIgnoreCase))
                     {
                         ErrorMessage = "Payment already verified. No further uploads allowed.";
                         return RedirectToPage("/Dashboard/Student");
                     }
 
-                    // Update existing payment (pending or rejected)
-                    var updatePayment = @"UPDATE payments SET Amount=@Amount, PaymentMethod=@PaymentMethod, ReferenceNumber=@ReferenceNumber,
-                                            PaymentProofUrl=@PaymentProofUrl, Status=@Status, PaymentDate=@PaymentDate, RejectionReason=NULL, UpdatedDate=@Now
-                                         WHERE PaymentId=@PaymentId";
+                    // Update existing payment
+                    ExistingPayment.Amount = Request.TotalAmount;
+                    ExistingPayment.PaymentMethod = PaymentMethod;
+                    ExistingPayment.ReferenceNumber = ReferenceNumber;
+                    ExistingPayment.PaymentProofUrl = relativeFilePath;
+                    ExistingPayment.Status = "Pending";
+                    ExistingPayment.PaymentDate = DateTime.UtcNow;
+                    ExistingPayment.RejectionReason = null;
+                    ExistingPayment.UpdatedDate = DateTime.UtcNow;
 
-                    var updParams = new Dictionary<string, object>
-                    {
-                        { "@Amount", amount },
-                        { "@PaymentMethod", PaymentMethod },
-                        { "@ReferenceNumber", ReferenceNumber },
-                        { "@PaymentProofUrl", relativeFilePath },
-                        { "@Status", "Pending" },
-                        { "@PaymentDate", DateTime.Now },
-                        { "@Now", DateTime.Now },
-                        { "@PaymentId", ExistingPayment.PaymentId }
-                    };
-
-                    await _dbHelper.ExecuteNonQueryAsync(updatePayment, updParams);
+                    await _mongoDBService.UpdatePaymentAsync(ExistingPayment.PaymentId, ExistingPayment);
                 }
                 else
                 {
-                    // Insert payment record
-                    var insertPaymentQuery = @"INSERT INTO payments 
-                    (RequestId, Amount, PaymentMethod, ReferenceNumber, PaymentProofUrl, Status, PaymentDate)
-                    VALUES (@RequestId, @Amount, @PaymentMethod, @ReferenceNumber, @PaymentProofUrl, @Status, @PaymentDate)";
-
-                    var paymentParams = new Dictionary<string, object>
+                    // Create new payment
+                    var newPayment = new Payment
                     {
-                        { "@RequestId", RequestId },
-                        { "@Amount", amount },
-                        { "@PaymentMethod", PaymentMethod },
-                        { "@ReferenceNumber", ReferenceNumber },
-                        { "@PaymentProofUrl", relativeFilePath },
-                        { "@Status", "Pending" },
-                        { "@PaymentDate", DateTime.Now }
+                        RequestId = RequestId,
+                        Amount = Request.TotalAmount,
+                        PaymentMethod = PaymentMethod,
+                        ReferenceNumber = ReferenceNumber,
+                        PaymentProofUrl = relativeFilePath,
+                        Status = "Pending",
+                        PaymentDate = DateTime.UtcNow
                     };
 
-                    await _dbHelper.ExecuteNonQueryAsync(insertPaymentQuery, paymentParams);
+                    await _mongoDBService.CreatePaymentAsync(newPayment);
                 }
 
-                // Update request status - set to Pending Verification so staff must confirm
-                var updateRequestQuery = @"UPDATE documentrequests 
-                    SET CurrentStage = @CurrentStage, PaymentStatus = @PaymentStatus 
-                    WHERE RequestId = @RequestId";
-
-                var updateParams = new Dictionary<string, object>
-                {
-                    { "@CurrentStage", "Payment Verification" },
-                    { "@PaymentStatus", "Pending Verification" },
-                    { "@RequestId", RequestId }
-                };
-
-                await _dbHelper.ExecuteNonQueryAsync(updateRequestQuery, updateParams);
+                // Update request status
+                await _mongoDBService.UpdateRequestStageAsync(
+                    RequestId,
+                    "Payment Verification",
+                    "Pending Verification"
+                );
 
                 // Create workflow history
-                var historyQuery = @"INSERT INTO workflowhistory (RequestId, Stage, Action, Comments, ProcessedBy)
-                                    VALUES (@RequestId, @Stage, @Action, @Comments, @ProcessedBy)";
-                var historyParams = new Dictionary<string, object>
+                await _mongoDBService.CreateWorkflowHistoryAsync(new WorkflowHistory
                 {
-                    { "@RequestId", RequestId },
-                    { "@Stage", "Payment Verification" },
-                    { "@Action", "Payment Proof Uploaded" },
-                    { "@Comments", $"Payment Method: {PaymentMethod}, Ref: {ReferenceNumber}. {Notes}" },
-                    { "@ProcessedBy", userId }
-                };
-                await _dbHelper.ExecuteNonQueryAsync(historyQuery, historyParams);
+                    RequestId = RequestId,
+                    Stage = "Payment Verification",
+                    Action = "Payment Proof Uploaded",
+                    Comments = $"Payment Method: {PaymentMethod}, Ref: {ReferenceNumber}. {Notes}",
+                    ProcessedBy = userId.Value
+                });
 
                 _logger.LogInformation($"Payment uploaded for RequestId={RequestId} by UserId={userId}");
 
@@ -243,31 +203,19 @@ namespace ProjectCapstone.Pages.DocumentRequest
         {
             try
             {
-                var query = @"SELECT dr.*, dt.DocumentName, dt.Amount 
-                             FROM documentrequests dr
-                             LEFT JOIN documenttypes dt ON dr.DocumentTypeId = dt.DocumentTypeId
-                             WHERE dr.RequestId = @RequestId AND dr.UserId = @UserId";
+                var request = await _mongoDBService.GetRequestByIdAsync(RequestId);
 
-                var parameters = new Dictionary<string, object>
+                if (request != null && request.UserId == userId)
                 {
-                    { "@RequestId", RequestId },
-                    { "@UserId", userId }
-                };
-
-                var result = await _dbHelper.ExecuteQueryAsync(query, parameters);
-
-                if (result.Rows.Count > 0)
-                {
-                    var row = result.Rows[0];
-                    Request = new ProjectCapstone.Models.DocumentRequest
+                    Request = new Models.DocumentRequest
                     {
-                        RequestId = Convert.ToInt32(row["RequestId"]),
-                        QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
-                        DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
-                        Quantity = Convert.ToInt32(row["Quantity"]),
-                        TotalAmount = Convert.ToDecimal(row["TotalAmount"]),
-                        CurrentStage = row["CurrentStage"]?.ToString() ?? string.Empty,
-                        PaymentStatus = row["PaymentStatus"]?.ToString() ?? string.Empty
+                        RequestId = request.RequestId,
+                        QueueNumber = request.QueueNumber,
+                        DocumentType = request.DocumentType,
+                        Quantity = request.Quantity,
+                        TotalAmount = request.TotalAmount,
+                        CurrentStage = request.CurrentStage,
+                        PaymentStatus = request.PaymentStatus
                     };
                 }
             }
@@ -281,26 +229,7 @@ namespace ProjectCapstone.Pages.DocumentRequest
         {
             try
             {
-                var q = @"SELECT * FROM payments WHERE RequestId = @RequestId ORDER BY PaymentDate DESC LIMIT 1";
-                var dt = await _dbHelper.ExecuteQueryAsync(q, new() { { "@RequestId", RequestId } });
-                if (dt.Rows.Count > 0)
-                {
-                    var r = dt.Rows[0];
-                    ExistingPayment = new ProjectCapstone.Models.Payment
-                    {
-                        PaymentId = Convert.ToInt32(r["PaymentId"]),
-                        RequestId = Convert.ToInt32(r["RequestId"]),
-                        Amount = Convert.ToDecimal(r["Amount"]),
-                        PaymentMethod = r["PaymentMethod"]?.ToString() ?? string.Empty,
-                        ReferenceNumber = r["ReferenceNumber"]?.ToString(),
-                        PaymentProofUrl = r["PaymentProofUrl"]?.ToString(),
-                        Status = r["Status"]?.ToString() ?? "Pending",
-                        VerifiedBy = r["VerifiedBy"] != DBNull.Value ? Convert.ToInt32(r["VerifiedBy"]) : (int?)null,
-                        VerifiedDate = r["VerifiedDate"] != DBNull.Value ? Convert.ToDateTime(r["VerifiedDate"]) : (DateTime?)null,
-                        RejectionReason = r["RejectionReason"]?.ToString(),
-                        PaymentDate = r["PaymentDate"] != DBNull.Value ? Convert.ToDateTime(r["PaymentDate"]) : DateTime.MinValue
-                    };
-                }
+                ExistingPayment = await _mongoDBService.GetPaymentByRequestIdAsync(RequestId);
             }
             catch (Exception ex)
             {
