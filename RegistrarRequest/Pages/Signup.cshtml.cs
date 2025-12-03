@@ -13,35 +13,35 @@ namespace ProjectCapstone.Pages
         [BindProperty]
         [Required(ErrorMessage = "First name is required")]
         [StringLength(100)]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Last name is required")]
         [StringLength(100)]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Student number is required")]
         [RegularExpression(@"^[A-Z0-9-]+$", ErrorMessage = "Invalid student number format")]
-        public string StudentNumber { get; set; }
+        public string StudentNumber { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Invalid email address")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Contact number is required")]
         [Phone(ErrorMessage = "Invalid phone number")]
-        public string ContactNumber { get; set; }
+        public string ContactNumber { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Course is required")]
-        public string Course { get; set; }
+        public string Course { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Year level is required")]
-        public string YearLevel { get; set; }
+        public string YearLevel { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Password is required")]
@@ -49,19 +49,19 @@ namespace ProjectCapstone.Pages
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$",
             ErrorMessage = "Password must contain uppercase, lowercase, number and special character")]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Please confirm your password")]
         [Compare("Password", ErrorMessage = "Passwords do not match")]
         [DataType(DataType.Password)]
-        public string ConfirmPassword { get; set; }
+        public string ConfirmPassword { get; set; } = string.Empty;
 
         [TempData]
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
 
         [TempData]
-        public string SuccessMessage { get; set; }
+        public string SuccessMessage { get; set; } = string.Empty;
 
         public SignupModel(IConfiguration configuration, ILogger<SignupModel> logger)
         {
@@ -89,7 +89,7 @@ namespace ProjectCapstone.Pages
             {
                 // Sanitize inputs
                 var sanitizedStudentNumber = SecurityHelper.SanitizeInput(StudentNumber);
-                var sanitizedEmail = SecurityHelper.SanitizeInput(Email.ToLower());
+                var sanitizedEmail = SecurityHelper.SanitizeInput((Email ?? string.Empty).ToLower());
                 var sanitizedFirstName = SecurityHelper.SanitizeInput(FirstName);
                 var sanitizedLastName = SecurityHelper.SanitizeInput(LastName);
 
@@ -99,7 +99,8 @@ namespace ProjectCapstone.Pages
                 {
                     { "@StudentNumber", sanitizedStudentNumber }
                 };
-                var studentExists = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(checkStudentQuery, studentParams));
+                var studentExistsObj = await _dbHelper.ExecuteScalarAsync(checkStudentQuery, studentParams);
+                var studentExists = Convert.ToInt32(studentExistsObj ?? 0);
 
                 if (studentExists > 0)
                 {
@@ -113,7 +114,8 @@ namespace ProjectCapstone.Pages
                 {
                     { "@Email", sanitizedEmail }
                 };
-                var emailExists = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(checkEmailQuery, emailParams));
+                var emailExistsObj = await _dbHelper.ExecuteScalarAsync(checkEmailQuery, emailParams);
+                var emailExists = Convert.ToInt32(emailExistsObj ?? 0);
 
                 if (emailExists > 0)
                 {
@@ -137,9 +139,9 @@ namespace ProjectCapstone.Pages
                     { "@LastName", sanitizedLastName },
                     { "@Email", sanitizedEmail },
                     { "@PasswordHash", passwordHash },
-                    { "@ContactNumber", ContactNumber },
-                    { "@Course", Course },
-                    { "@YearLevel", YearLevel }
+                    { "@ContactNumber", ContactNumber ?? string.Empty },
+                    { "@Course", Course ?? string.Empty },
+                    { "@YearLevel", YearLevel ?? string.Empty }
                 };
 
                 await _dbHelper.ExecuteNonQueryAsync(insertQuery, insertParams);

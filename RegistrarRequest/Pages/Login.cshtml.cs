@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ProjectCapstone.Helpers;
 using ProjectCapstone.Models;
@@ -13,21 +13,25 @@ namespace ProjectCapstone.Pages
 
         [BindProperty]
         [Required(ErrorMessage = "Student Number or Email is required")]
-        public string StudentNumber { get; set; }
+        public string StudentNumber { get; set; } = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
 
         [BindProperty]
         public bool RememberMe { get; set; }
 
-        [TempData]
-        public string ErrorMessage { get; set; }
+        // ✅ ADD THIS NEW PROPERTY
+        [BindProperty]
+        public string RoleType { get; set; } = string.Empty;
 
         [TempData]
-        public string SuccessMessage { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
+
+        [TempData]
+        public string SuccessMessage { get; set; } = string.Empty;
 
         public LoginModel(IConfiguration configuration, ILogger<LoginModel> logger)
         {
@@ -77,10 +81,10 @@ namespace ProjectCapstone.Pages
                 }
 
                 var row = result.Rows[0];
-                var storedHash = row["PasswordHash"].ToString();
+                var storedHash = row["PasswordHash"]?.ToString() ?? string.Empty;
 
-                // Verify password
-                if (!SecurityHelper.VerifyPassword(Password, storedHash))
+                // Verify password - ensure storedHash is not null/empty
+                if (string.IsNullOrEmpty(storedHash) || !SecurityHelper.VerifyPassword(Password, storedHash))
                 {
                     ErrorMessage = "Invalid student number/email or password.";
                     _logger.LogWarning($"Failed login attempt (wrong password) for: {sanitizedInput}");
@@ -89,14 +93,34 @@ namespace ProjectCapstone.Pages
 
                 // Login successful - create session
                 var userId = Convert.ToInt32(row["UserId"]);
-                var role = row["Role"].ToString();
-                var fullName = $"{row["FirstName"]} {row["LastName"]}";
+                var role = row["Role"]?.ToString() ?? string.Empty;
+                var fullName = $"{row["FirstName"]?.ToString() ?? string.Empty} {row["LastName"]?.ToString() ?? string.Empty}".Trim();
+
+                // ✅ ADD THIS ROLE VALIDATION BLOCK
+                // Validate that selected role matches user's actual role
+                if (!string.IsNullOrEmpty(RoleType))
+                {
+                    if (RoleType.ToLower() == "student" && (role == "Admin" || role == "Staff"))
+                    {
+                        ErrorMessage = "This account is not registered as a student. Please use Admin login.";
+                        _logger.LogWarning($"Role mismatch: Student login attempted for admin account: {sanitizedInput}");
+                        return Page();
+                    }
+
+                    if (RoleType.ToLower() == "admin" && role == "Student")
+                    {
+                        ErrorMessage = "This account is not registered as admin/staff. Please use Student login.";
+                        _logger.LogWarning($"Role mismatch: Admin login attempted for student account: {sanitizedInput}");
+                        return Page();
+                    }
+                }
+                // ✅ END OF NEW VALIDATION BLOCK
 
                 HttpContext.Session.SetInt32("UserId", userId);
                 HttpContext.Session.SetString("Role", role);
                 HttpContext.Session.SetString("FullName", fullName);
-                HttpContext.Session.SetString("StudentNumber", row["StudentNumber"].ToString());
-                HttpContext.Session.SetString("Email", row["Email"].ToString());
+                HttpContext.Session.SetString("StudentNumber", row["StudentNumber"]?.ToString() ?? string.Empty);
+                HttpContext.Session.SetString("Email", row["Email"]?.ToString() ?? string.Empty);
 
                 // Update last login time
                 var updateQuery = "UPDATE Users SET LastLogin = @LoginTime WHERE UserId = @UserId";
@@ -116,8 +140,8 @@ namespace ProjectCapstone.Pages
                 var logParams = new Dictionary<string, object>
                     {
                         { "@UserId", userId },
-                        { "@IpAddress", ipAddress },
-                        { "@UserAgent", userAgent }
+                        { "@IpAddress", ipAddress ?? string.Empty },
+                        { "@UserAgent", userAgent ?? string.Empty }
                     };
                 await _dbHelper.ExecuteNonQueryAsync(logQuery, logParams);
 

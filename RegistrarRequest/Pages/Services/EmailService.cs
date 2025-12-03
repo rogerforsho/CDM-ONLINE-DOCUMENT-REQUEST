@@ -9,6 +9,7 @@ namespace ProjectCapstone.Services
     public interface IEmailService
     {
         Task SendDocumentReadyEmailAsync(string toEmail, string studentName, string documentType, string queueNumber);
+        Task SendPaymentVerificationEmailAsync(string toEmail, string studentName, string queueNumber, bool approved, string? reason = null);
     }
 
     public class EmailService : IEmailService
@@ -40,19 +41,67 @@ namespace ProjectCapstone.Services
             }
         }
 
+        public async Task SendPaymentVerificationEmailAsync(string toEmail, string studentName, string queueNumber, bool approved, string? reason = null)
+        {
+            try
+            {
+                _logger.LogInformation($"📧 Preparing payment verification email for {studentName} ({toEmail})");
+
+                var message = new MimeMessage();
+                var senderName = _configuration["EmailSettings:SenderName"] ?? string.Empty;
+                var senderEmail = _configuration["EmailSettings:SenderEmail"] ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(senderEmail))
+                {
+                    throw new InvalidOperationException("EmailSettings:SenderEmail is not configured.");
+                }
+
+                message.From.Add(new MailboxAddress(senderName, senderEmail));
+                message.To.Add(new MailboxAddress(studentName ?? string.Empty, toEmail ?? string.Empty));
+                message.Subject = approved ? "Payment Verified - CDM Document Queue" : "Payment Rejected - CDM Document Queue";
+
+                var bodyBuilder = new BodyBuilder();
+                if (approved)
+                {
+                    bodyBuilder.HtmlBody = $@"<p>Dear {studentName},</p>
+<p>Your payment for request <strong>{queueNumber}</strong> has been <strong>verified</strong> by the Accounting Office. Thank you.</p>
+<p>The request will proceed to the next stage.</p>
+<p>Regards,<br/>Registrar's Office</p>";
+                }
+                else
+                {
+                    var reasonHtml = string.IsNullOrWhiteSpace(reason) ? "Please re-upload a clearer receipt or correct reference number." : System.Net.WebUtility.HtmlEncode(reason);
+                    bodyBuilder.HtmlBody = $@"<p>Dear {studentName},</p>
+<p>Your payment for request <strong>{queueNumber}</strong> has been <strong>rejected</strong> by the Accounting Office.</p>
+<p><strong>Reason:</strong> {reasonHtml}</p>
+<p>Please re-upload your payment proof with the correct details so we can verify and continue processing your request.</p>
+<p>Regards,<br/>Accounting Office</p>";
+                }
+
+                message.Body = bodyBuilder.ToMessageBody();
+
+                await SendEmailAsync(message);
+                _logger.LogInformation($"✅ Payment verification email sent to {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"❌ Error sending payment verification email: {ex.Message}");
+                // don't rethrow to avoid blocking accounting workflow
+            }
+        }
+
         private MimeMessage CreateEmailMessage(string toEmail, string studentName, string documentType, string queueNumber)
         {
+            var senderName = _configuration["EmailSettings:SenderName"] ?? string.Empty;
+            var senderEmail = _configuration["EmailSettings:SenderEmail"] ?? string.Empty;
+
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(
-                _configuration["EmailSettings:SenderName"],
-                _configuration["EmailSettings:SenderEmail"]
-            ));
-            message.To.Add(new MailboxAddress(studentName, toEmail));
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(new MailboxAddress(studentName ?? string.Empty, toEmail ?? string.Empty));
             message.Subject = "📄 Your Document is Ready for Pickup - CDM Document Queue";
 
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = GetEmailTemplate(studentName, documentType, queueNumber)
+                HtmlBody = GetEmailTemplate(studentName ?? string.Empty, documentType ?? string.Empty, queueNumber ?? string.Empty)
             };
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -65,18 +114,29 @@ namespace ProjectCapstone.Services
 
             try
             {
-                // Connect to SMTP server
-                await client.ConnectAsync(
-                    _configuration["EmailSettings:SmtpServer"],
-                    int.Parse(_configuration["EmailSettings:Port"]),
-                    SecureSocketOptions.StartTls
-                );
+                var server = _configuration["EmailSettings:SmtpServer"];
+                var portValue = _configuration["EmailSettings:Port"];
+                var senderEmail = _configuration["EmailSettings:SenderEmail"];
+                var password = _configuration["EmailSettings:Password"];
 
-                // Authenticate
-                await client.AuthenticateAsync(
-                    _configuration["EmailSettings:SenderEmail"],
-                    _configuration["EmailSettings:Password"]
-                );
+                if (string.IsNullOrWhiteSpace(server) || string.IsNullOrWhiteSpace(portValue))
+                {
+                    throw new InvalidOperationException("SMTP server or port not configured in EmailSettings.");
+                }
+
+                if (!int.TryParse(portValue, out var port))
+                {
+                    throw new InvalidOperationException("Invalid SMTP port configured.");
+                }
+
+                // Connect to SMTP server
+                await client.ConnectAsync(server, port, SecureSocketOptions.StartTls);
+
+                // Authenticate if credentials provided
+                if (!string.IsNullOrEmpty(senderEmail) && !string.IsNullOrEmpty(password))
+                {
+                    await client.AuthenticateAsync(senderEmail, password);
+                }
 
                 // Send email
                 await client.SendAsync(message);
@@ -90,7 +150,11 @@ namespace ProjectCapstone.Services
             }
             finally
             {
-                await client.DisconnectAsync(true);
+                try
+                {
+                    await client.DisconnectAsync(true);
+                }
+                catch { }
             }
         }
 

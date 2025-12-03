@@ -12,8 +12,8 @@ namespace ProjectCapstone.Pages.Dashboard
         private readonly ILogger<AdminModel> _logger;
         private readonly IEmailService _emailService;
 
-        public string FullName { get; set; }
-        public string Email { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public int PendingCount { get; set; }
         public int ProcessingCount { get; set; }
         public int ReadyCount { get; set; }
@@ -28,10 +28,10 @@ namespace ProjectCapstone.Pages.Dashboard
         public Dictionary<string, int> DocumentTypeStats { get; set; }
 
         [TempData]
-        public string SuccessMessage { get; set; }
+        public string SuccessMessage { get; set; } = string.Empty;
 
         [TempData]
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
 
         public AdminModel(IConfiguration configuration, ILogger<AdminModel> logger, IEmailService emailService)
         {
@@ -41,6 +41,7 @@ namespace ProjectCapstone.Pages.Dashboard
             AllRequests = new List<AdminDocumentRequest>();
             PendingDocuments = new List<AdminDocumentRequest>();
             ReadyDocuments = new List<AdminDocumentRequest>();
+            HistoryDocuments = new List<AdminDocumentRequest>();
             DocumentTypeStats = new Dictionary<string, int>();
         }
 
@@ -73,8 +74,8 @@ namespace ProjectCapstone.Pages.Dashboard
             }
 
             // Get user info from session
-            FullName = HttpContext.Session.GetString("FullName");
-            Email = HttpContext.Session.GetString("Email");
+            FullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
+            Email = HttpContext.Session.GetString("Email") ?? string.Empty;
 
             try
             {
@@ -83,6 +84,9 @@ namespace ProjectCapstone.Pages.Dashboard
 
                 // Load all document requests
                 await LoadAllRequests();
+
+                // Load history documents (completed and cancelled)
+                await LoadHistoryDocuments();
             }
             catch (Exception ex)
             {
@@ -113,18 +117,18 @@ namespace ProjectCapstone.Pages.Dashboard
                 var detailsParams = new Dictionary<string, object> { { "@RequestId", requestId } };
                 var detailsResult = await _dbHelper.ExecuteQueryAsync(getDetailsQuery, detailsParams);
 
-                string studentEmail = null;
-                string studentName = null;
-                string documentType = null;
-                string queueNumber = null;
+                string studentEmail = string.Empty;
+                string studentName = string.Empty;
+                string documentType = string.Empty;
+                string queueNumber = string.Empty;
 
                 if (detailsResult.Rows.Count > 0)
                 {
                     var row = detailsResult.Rows[0];
-                    studentEmail = row["Email"].ToString();
-                    studentName = $"{row["FirstName"]} {row["LastName"]}";
-                    documentType = row["DocumentType"].ToString();
-                    queueNumber = row["QueueNumber"].ToString();
+                    studentEmail = row["Email"]?.ToString() ?? string.Empty;
+                    studentName = $"{row["FirstName"]?.ToString() ?? string.Empty} {row["LastName"]?.ToString() ?? string.Empty}".Trim();
+                    documentType = row["DocumentType"]?.ToString() ?? string.Empty;
+                    queueNumber = row["QueueNumber"]?.ToString() ?? string.Empty;
                 }
 
                 // Update status to Ready
@@ -244,18 +248,18 @@ namespace ProjectCapstone.Pages.Dashboard
                 var detailsParams = new Dictionary<string, object> { { "@RequestId", requestId } };
                 var detailsResult = await _dbHelper.ExecuteQueryAsync(getDetailsQuery, detailsParams);
 
-                string studentEmail = null;
-                string studentName = null;
-                string documentType = null;
-                string queueNumber = null;
+                string studentEmail = string.Empty;
+                string studentName = string.Empty;
+                string documentType = string.Empty;
+                string queueNumber = string.Empty;
 
                 if (detailsResult.Rows.Count > 0)
                 {
                     var row = detailsResult.Rows[0];
-                    studentEmail = row["Email"].ToString();
-                    studentName = $"{row["FirstName"]} {row["LastName"]}";
-                    documentType = row["DocumentType"].ToString();
-                    queueNumber = row["QueueNumber"].ToString();
+                    studentEmail = row["Email"]?.ToString() ?? string.Empty;
+                    studentName = $"{row["FirstName"]?.ToString() ?? string.Empty} {row["LastName"]?.ToString() ?? string.Empty}".Trim();
+                    documentType = row["DocumentType"]?.ToString() ?? string.Empty;
+                    queueNumber = row["QueueNumber"]?.ToString() ?? string.Empty;
                 }
 
                 // Update status in database
@@ -342,19 +346,19 @@ namespace ProjectCapstone.Pages.Dashboard
         {
             // Get pending count (all users)
             var pendingQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE Status = 'Pending'";
-            PendingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(pendingQuery));
+            PendingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(pendingQuery) ?? 0);
 
             // Get processing count (all users)
             var processingQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE Status = 'Processing'";
-            ProcessingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(processingQuery));
+            ProcessingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(processingQuery) ?? 0);
 
             // Get ready count (all users)
             var readyQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE Status = 'Ready'";
-            ReadyCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(readyQuery));
+            ReadyCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(readyQuery) ?? 0);
 
             // Get total requests (all users)
             var totalQuery = "SELECT COUNT(*) FROM DocumentRequests";
-            TotalRequests = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(totalQuery));
+            TotalRequests = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(totalQuery) ?? 0);
         }
 
         private async Task LoadAllRequests()
@@ -380,15 +384,15 @@ namespace ProjectCapstone.Pages.Dashboard
                 var doc = new AdminDocumentRequest
                 {
                     RequestId = Convert.ToInt32(row["RequestId"]),
-                    QueueNumber = row["QueueNumber"].ToString(),
-                    DocumentType = row["DocumentType"].ToString(),
-                    Purpose = row["Purpose"].ToString(),
+                    QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                    DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                    Purpose = row["Purpose"]?.ToString() ?? string.Empty,
                     Quantity = Convert.ToInt32(row["Quantity"]),
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
-                    Status = row["Status"].ToString(),
-                    StudentName = $"{row["FirstName"]} {row["LastName"]}",
-                    StudentNumber = row["StudentNumber"].ToString(),
-                    StudentEmail = row["Email"].ToString()
+                    Status = row["Status"]?.ToString() ?? string.Empty,
+                    StudentName = $"{row["FirstName"]?.ToString() ?? string.Empty} {row["LastName"]?.ToString() ?? string.Empty}".Trim(),
+                    StudentNumber = row["StudentNumber"]?.ToString() ?? string.Empty,
+                    StudentEmail = row["Email"]?.ToString() ?? string.Empty
                 };
 
                 // Add to AllRequests
@@ -407,6 +411,39 @@ namespace ProjectCapstone.Pages.Dashboard
 
             // Load document type statistics for analytics
             LoadDocumentTypeStats();
+        }
+
+        private async Task LoadHistoryDocuments()
+        {
+            var query = @"SELECT dr.RequestId, dr.QueueNumber, dr.DocumentType, dr.Purpose, dr.Quantity, dr.RequestDate, dr.CompletedDate, dr.Status,
+                                u.FirstName, u.LastName, u.StudentNumber, u.Email
+                         FROM DocumentRequests dr
+                         INNER JOIN Users u ON dr.UserId = u.UserId
+                         WHERE dr.Status IN ('Completed', 'Cancelled')
+                         ORDER BY COALESCE(dr.CompletedDate, dr.RequestDate) DESC";
+
+            var result = await _dbHelper.ExecuteQueryAsync(query);
+
+            HistoryDocuments.Clear();
+            foreach (DataRow row in result.Rows)
+            {
+                var doc = new AdminDocumentRequest
+                {
+                    RequestId = Convert.ToInt32(row["RequestId"]),
+                    QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                    DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                    Purpose = row["Purpose"]?.ToString() ?? string.Empty,
+                    Quantity = Convert.ToInt32(row["Quantity"]),
+                    RequestDate = Convert.ToDateTime(row["RequestDate"]),
+                    ReadyDate = row["CompletedDate"] != DBNull.Value ? Convert.ToDateTime(row["CompletedDate"]) : (DateTime?)null,
+                    Status = row["Status"]?.ToString() ?? string.Empty,
+                    StudentName = $"{row["FirstName"]?.ToString() ?? string.Empty} {row["LastName"]?.ToString() ?? string.Empty}".Trim(),
+                    StudentNumber = row["StudentNumber"]?.ToString() ?? string.Empty,
+                    StudentEmail = row["Email"]?.ToString() ?? string.Empty
+                };
+
+                HistoryDocuments.Add(doc);
+            }
         }
 
         private void LoadDocumentTypeStats()
@@ -429,15 +466,15 @@ namespace ProjectCapstone.Pages.Dashboard
     public class AdminDocumentRequest
     {
         public int RequestId { get; set; }
-        public string QueueNumber { get; set; }
-        public string DocumentType { get; set; }
-        public string Purpose { get; set; }
+        public string QueueNumber { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = string.Empty;
+        public string Purpose { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public DateTime RequestDate { get; set; }
         public DateTime? ReadyDate { get; set; }
-        public string Status { get; set; }
-        public string StudentName { get; set; }
-        public string StudentNumber { get; set; }
-        public string StudentEmail { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentNumber { get; set; } = string.Empty;
+        public string StudentEmail { get; set; } = string.Empty;
     }
 }

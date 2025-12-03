@@ -775,7 +775,9 @@
                                 <th>Purpose</th>
                                 <th>Copies</th>
                                 <th>Date Requested</th>
+                                <th>Payment</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -788,9 +790,51 @@
                                     <td>@request.Quantity</td>
                                     <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
                                     <td>
+                                        @if (request.TotalAmount > 0)
+                                        {
+                                            <div>₱@request.TotalAmount.ToString("N2")</div>
+                                            <small class="text-muted">@request.PaymentStatus</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success">Free</span>
+                                        }
+                                    </td>
+                                    <td>
                                         <span class="badge-status badge-@request.Status.ToLower()">
                                             @request.Status
                                         </span>
+                                    </td>
+                                    <td>
+                                        @if (request.TotalAmount > 0)
+                                        {
+                                            if (string.Equals(request.PaymentStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
+                                                string.Equals(request.PaymentStatus, "Pending Payment", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <a class="btn btn-sm btn-primary" href="/DocumentRequest/Payment?requestId=@request.RequestId">Upload Payment</a>
+                                            }
+                                            else if (string.Equals(request.PaymentStatus, "Pending Verification", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <span class="text-warning">Awaiting Verification</span>
+                                                <a class="btn btn-sm btn-outline-primary" href="/DocumentRequest/Payment?requestId=@request.RequestId">View</a>
+                                            }
+                                            else if (string.Equals(request.PaymentStatus, "Verified", StringComparison.OrdinalIgnoreCase) || string.Equals(request.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <span class="text-success">Paid</span>
+                                            }
+                                            else if (string.Equals(request.PaymentStatus, "Rejected", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <a class="btn btn-sm btn-warning" href="/DocumentRequest/Payment?requestId=@request.RequestId">Re-upload</a>
+                                            }
+                                            else
+                                            {
+                                                <span>@request.PaymentStatus</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
                                     </td>
                                 </tr>
                             }

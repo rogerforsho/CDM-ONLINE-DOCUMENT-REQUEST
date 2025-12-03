@@ -33,6 +33,8 @@ namespace ProjectCapstone.Helpers
         {
             try
             {
+                if (string.IsNullOrEmpty(hashedPassword)) return false;
+
                 // Extract the bytes
                 byte[] hashBytes = Convert.FromBase64String(hashedPassword);
 
@@ -73,7 +75,7 @@ namespace ProjectCapstone.Helpers
         public static string SanitizeInput(string input)
         {
             if (string.IsNullOrEmpty(input))
-                return input;
+                return string.Empty;
 
             return System.Net.WebUtility.HtmlEncode(input);
         }

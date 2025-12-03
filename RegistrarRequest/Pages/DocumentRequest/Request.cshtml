@@ -1,0 +1,215 @@
+﻿@page
+@model ProjectCapstone.Pages.DocumentRequest.RequestModel
+@{
+    ViewData["Title"] = "Request Document";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-file-alt"></i> Request Document</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle"></i> @Model.SuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post" id="requestForm">
+                        <!-- Document Type Selection -->
+                        <div class="mb-3">
+                            <label for="documentTypeId" class="form-label fw-bold">
+                                <i class="fas fa-file"></i> Select Document Type <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="documentTypeId" asp-for="DocumentTypeId" required>
+                                <option value="">-- Choose Document Type --</option>
+                                @foreach (var docType in Model.DocumentTypes)
+                                {
+                                    <option value="@docType.DocumentTypeId"
+                                            data-price="@docType.Amount"
+                                            data-payment="@docType.RequiresPayment.ToString().ToLower()"
+                                            data-days="@docType.ProcessingDays">
+                                        @docType.DocumentName
+                                        @if (docType.RequiresPayment)
+                                        {
+                                            <text>(₱@docType.Amount.ToString("N2"))</text>
+                                        }
+                                        else
+                                        {
+                                            <text>(FREE)</text>
+                                        }
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Quick reference list of available document types -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Available Document Types</label>
+                            @if (Model.DocumentTypes != null && Model.DocumentTypes.Count > 0)
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Category</th>
+                                                <th class="text-end">Price</th>
+                                                <th class="text-center">Payment</th>
+                                                <th class="text-center">Days</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var dt in Model.DocumentTypes)
+                                            {
+                                                <tr>
+                                                    <td>@dt.DocumentName</td>
+                                                    <td>@dt.Category</td>
+                                                    <td class="text-end">@((dt.RequiresPayment) ? "₱" + dt.Amount.ToString("N2") : "—")</td>
+                                                    <td class="text-center">@((dt.RequiresPayment) ? "Yes" : "No")</td>
+                                                    <td class="text-center">@dt.ProcessingDays</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted">No document types available. Please contact administration.</div>
+                            }
+                        </div>
+
+                        <!-- Document Info Display -->
+                        <div id="documentInfo" class="alert alert-info" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Price per copy:</strong> <span id="priceDisplay">₱0.00</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Processing time:</strong> <span id="processingDays">0</span> business days
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up"></i> Quantity <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group" style="max-width: 200px;">
+                                <button type="button" class="btn btn-outline-secondary" id="decreaseQty">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" class="form-control text-center" id="quantity"
+                                       asp-for="Quantity" min="1" max="10" value="1" required>
+                                <button type="button" class="btn btn-outline-secondary" id="increaseQty">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Total Amount Display -->
+                        <div id="totalAmountSection" class="mb-3" style="display: none;">
+                            <div class="alert alert-success">
+                                <h5 class="mb-0">
+                                    <strong>Total Amount:</strong>
+                                    <span id="totalAmount" class="float-end">₱0.00</span>
+                                </h5>
+                            </div>
+                        </div>
+
+                        <!-- Purpose -->
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label fw-bold">
+                                <i class="fas fa-comment"></i> Purpose <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="purpose" asp-for="Purpose"
+                                      rows="3" placeholder="Enter the purpose of this request" required></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane"></i> Submit Request
+                            </button>
+                            <a href="/Dashboard/Student" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Update price and total when document type changes
+            $('#documentTypeId').change(function() {
+                updatePriceDisplay();
+            });
+
+            // Quantity buttons
+            $('#increaseQty').click(function() {
+                let qty = parseInt($('#quantity').val());
+                if (qty < 10) {
+                    $('#quantity').val(qty + 1);
+                    updatePriceDisplay();
+                }
+            });
+
+            $('#decreaseQty').click(function() {
+                let qty = parseInt($('#quantity').val());
+                if (qty > 1) {
+                    $('#quantity').val(qty - 1);
+                    updatePriceDisplay();
+                }
+            });
+
+            $('#quantity').on('input', function() {
+                updatePriceDisplay();
+            });
+
+            function updatePriceDisplay() {
+                const selected = $('#documentTypeId option:selected');
+                const price = parseFloat(selected.data('price')) || 0;
+                const requiresPayment = selected.data('payment') === true || selected.data('payment') === 'true';
+                const days = selected.data('days') || 0;
+                const quantity = parseInt($('#quantity').val()) || 1;
+                const total = price * quantity;
+
+                if (selected.val()) {
+                    $('#documentInfo').show();
+                    $('#priceDisplay').text(requiresPayment ? '₱' + price.toFixed(2) : 'FREE');
+                    $('#processingDays').text(days);
+
+                    if (requiresPayment) {
+                        $('#totalAmountSection').show();
+                        $('#totalAmount').text('₱' + total.toFixed(2));
+                    } else {
+                        $('#totalAmountSection').hide();
+                    }
+                } else {
+                    $('#documentInfo').hide();
+                    $('#totalAmountSection').hide();
+                }
+            }
+        });
+    </script>
+}

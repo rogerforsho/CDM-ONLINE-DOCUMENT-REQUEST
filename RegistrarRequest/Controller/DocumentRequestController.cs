@@ -54,13 +54,13 @@ namespace ProjectCapstone.Controllers
                 var parameters = new Dictionary<string, object>
                 {
                     { "@UserId", userId.Value },
-                    { "@DocumentType", SecurityHelper.SanitizeInput(request.DocumentType) },
-                    { "@Purpose", SecurityHelper.SanitizeInput(request.Purpose) },
+                    { "@DocumentType", SecurityHelper.SanitizeInput(request.DocumentType ?? string.Empty) },
+                    { "@Purpose", SecurityHelper.SanitizeInput(request.Purpose ?? string.Empty) },
                     { "@Quantity", request.Quantity },
                     { "@RequestDate", DateTime.Now },
                     { "@Status", "Pending" },
                     { "@QueueNumber", queueNumber },
-                    { "@Notes", SecurityHelper.SanitizeInput(request.Notes ?? "") }
+                    { "@Notes", SecurityHelper.SanitizeInput(request.Notes ?? string.Empty) }
                 };
 
                 var rowsAffected = await _dbHelper.ExecuteNonQueryAsync(query, parameters);
@@ -106,10 +106,15 @@ namespace ProjectCapstone.Controllers
 
                 var parameters = new Dictionary<string, object> { { "@UserId", userId.Value } };
 
-                var pending = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(pendingQuery, parameters));
-                var processing = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(processingQuery, parameters));
-                var ready = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(readyQuery, parameters));
-                var total = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(totalQuery, parameters));
+                var pendingObj = await _dbHelper.ExecuteScalarAsync(pendingQuery, parameters);
+                var processingObj = await _dbHelper.ExecuteScalarAsync(processingQuery, parameters);
+                var readyObj = await _dbHelper.ExecuteScalarAsync(readyQuery, parameters);
+                var totalObj = await _dbHelper.ExecuteScalarAsync(totalQuery, parameters);
+
+                var pending = Convert.ToInt32(pendingObj ?? 0);
+                var processing = Convert.ToInt32(processingObj ?? 0);
+                var ready = Convert.ToInt32(readyObj ?? 0);
+                var total = Convert.ToInt32(totalObj ?? 0);
 
                 _logger.LogInformation($"✅ Stats loaded: Pending={pending}, Processing={processing}, Ready={ready}, Total={total}");
 
@@ -140,7 +145,7 @@ namespace ProjectCapstone.Controllers
                 }
 
                 var query = @"SELECT RequestId, QueueNumber, DocumentType, Purpose, Quantity, 
-                             RequestDate, Status, Notes 
+                             RequestDate, Status, Notes, PaymentStatus, TotalAmount 
                              FROM DocumentRequests 
                              WHERE UserId = @UserId 
                              ORDER BY RequestDate DESC";
@@ -159,13 +164,15 @@ namespace ProjectCapstone.Controllers
                     requests.Add(new
                     {
                         requestId = Convert.ToInt32(row["RequestId"]),
-                        queueNumber = row["QueueNumber"].ToString(),
-                        documentType = row["DocumentType"].ToString(),
-                        purpose = row["Purpose"].ToString(),
+                        queueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                        documentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                        purpose = row["Purpose"]?.ToString() ?? string.Empty,
                         quantity = Convert.ToInt32(row["Quantity"]),
                         requestDate = Convert.ToDateTime(row["RequestDate"]),
-                        status = row["Status"].ToString(),
-                        notes = row["Notes"]?.ToString() ?? ""
+                        status = row["Status"]?.ToString() ?? string.Empty,
+                        notes = row["Notes"]?.ToString() ?? string.Empty,
+                        paymentStatus = row["PaymentStatus"]?.ToString() ?? string.Empty,
+                        totalAmount = row["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(row["TotalAmount"]) : 0m
                     });
                 }
 
@@ -225,12 +232,12 @@ namespace ProjectCapstone.Controllers
                     history.Add(new
                     {
                         requestId = Convert.ToInt32(row["RequestId"]),
-                        queueNumber = row["QueueNumber"].ToString(),
-                        documentType = row["DocumentType"].ToString(),
-                        purpose = row["Purpose"].ToString(),
+                        queueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                        documentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                        purpose = row["Purpose"]?.ToString() ?? string.Empty,
                         quantity = Convert.ToInt32(row["Quantity"]),
                         requestDate = Convert.ToDateTime(row["RequestDate"]),
-                        status = row["Status"].ToString(),
+                        status = row["Status"]?.ToString() ?? string.Empty,
                         completedDate = completedDate
                     });
                 }
@@ -250,10 +257,10 @@ namespace ProjectCapstone.Controllers
 
     public class DocumentRequestDto
     {
-        public string DocumentType { get; set; }
-        public string Purpose { get; set; }
+        public string? DocumentType { get; set; } = string.Empty;
+        public string? Purpose { get; set; } = string.Empty;
         public int Quantity { get; set; }
-        public string DeliveryMethod { get; set; }
-        public string Notes { get; set; }
+        public string? DeliveryMethod { get; set; } = string.Empty;
+        public string? Notes { get; set; } = string.Empty;
     }
 }

@@ -1,23 +1,30 @@
 ﻿using MySql.Data.MySqlClient;
 using System.Data;
+using Microsoft.Extensions.Configuration;
 
 namespace ProjectCapstone.Helpers
 {
     public class DatabaseHelper
     {
-        private readonly string _connectionString;
+        private readonly string? _connectionString;
 
         public DatabaseHelper(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            if (string.IsNullOrWhiteSpace(_connectionString))
+            {
+                throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+            }
         }
 
         public MySqlConnection GetConnection()
         {
-            return new MySqlConnection(_connectionString);
+            // _connectionString validated in constructor
+            return new MySqlConnection(_connectionString!);
         }
 
-        public async Task<DataTable> ExecuteQueryAsync(string query, Dictionary<string, object> parameters = null)
+        public async Task<DataTable> ExecuteQueryAsync(string query, Dictionary<string, object>? parameters = null)
         {
             using var connection = GetConnection();
             await connection.OpenAsync();
@@ -39,7 +46,7 @@ namespace ProjectCapstone.Helpers
             return dataTable;
         }
 
-        public async Task<int> ExecuteNonQueryAsync(string query, Dictionary<string, object> parameters = null)
+        public async Task<int> ExecuteNonQueryAsync(string query, Dictionary<string, object>? parameters = null)
         {
             using var connection = GetConnection();
             await connection.OpenAsync();
@@ -57,7 +64,7 @@ namespace ProjectCapstone.Helpers
             return await command.ExecuteNonQueryAsync();
         }
 
-        public async Task<object> ExecuteScalarAsync(string query, Dictionary<string, object> parameters = null)
+        public async Task<object?> ExecuteScalarAsync(string query, Dictionary<string, object>? parameters = null)
         {
             using var connection = GetConnection();
             await connection.OpenAsync();

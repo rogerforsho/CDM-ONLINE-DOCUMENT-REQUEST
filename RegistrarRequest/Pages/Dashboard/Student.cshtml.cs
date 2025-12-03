@@ -10,8 +10,8 @@ namespace ProjectCapstone.Pages.Dashboard
         private readonly DatabaseHelper _dbHelper;
         private readonly ILogger<StudentModel> _logger;
 
-        public string FullName { get; set; }
-        public string StudentNumber { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string StudentNumber { get; set; } = string.Empty;
         public int PendingCount { get; set; }
         public int ProcessingCount { get; set; }
         public int ReadyCount { get; set; }
@@ -26,6 +26,7 @@ namespace ProjectCapstone.Pages.Dashboard
             _logger = logger;
             RecentRequests = new List<DocumentRequest>();
             AllRequests = new List<DocumentRequest>();
+            HistoryRequests = new List<DocumentRequest>();
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -38,8 +39,8 @@ namespace ProjectCapstone.Pages.Dashboard
             }
 
             // Get user info from session
-            FullName = HttpContext.Session.GetString("FullName");
-            StudentNumber = HttpContext.Session.GetString("StudentNumber");
+            FullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
+            StudentNumber = HttpContext.Session.GetString("StudentNumber") ?? string.Empty;
 
             try
             {
@@ -65,27 +66,27 @@ namespace ProjectCapstone.Pages.Dashboard
             // Get pending count
             var pendingQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE UserId = @UserId AND Status = 'Pending'";
             var pendingParams = new Dictionary<string, object> { { "@UserId", userId } };
-            PendingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(pendingQuery, pendingParams));
+            PendingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(pendingQuery, pendingParams) ?? 0);
 
             // Get processing count
             var processingQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE UserId = @UserId AND Status = 'Processing'";
             var processingParams = new Dictionary<string, object> { { "@UserId", userId } };
-            ProcessingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(processingQuery, processingParams));
+            ProcessingCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(processingQuery, processingParams) ?? 0);
 
             // Get ready count
             var readyQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE UserId = @UserId AND Status = 'Ready'";
             var readyParams = new Dictionary<string, object> { { "@UserId", userId } };
-            ReadyCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(readyQuery, readyParams));
+            ReadyCount = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(readyQuery, readyParams) ?? 0);
 
             // Get total requests
             var totalQuery = "SELECT COUNT(*) FROM DocumentRequests WHERE UserId = @UserId";
             var totalParams = new Dictionary<string, object> { { "@UserId", userId } };
-            TotalRequests = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(totalQuery, totalParams));
+            TotalRequests = Convert.ToInt32(await _dbHelper.ExecuteScalarAsync(totalQuery, totalParams) ?? 0);
         }
 
         private async Task LoadRecentRequests(int userId)
         {
-            var query = @"SELECT RequestId, QueueNumber, DocumentType, Purpose, RequestDate, Status 
+            var query = @"SELECT RequestId, QueueNumber, DocumentType, Purpose, RequestDate, Status, PaymentStatus, TotalAmount 
                          FROM DocumentRequests 
                          WHERE UserId = @UserId 
                          ORDER BY RequestDate DESC 
@@ -99,18 +100,20 @@ namespace ProjectCapstone.Pages.Dashboard
                 RecentRequests.Add(new DocumentRequest
                 {
                     RequestId = Convert.ToInt32(row["RequestId"]),
-                    QueueNumber = row["QueueNumber"].ToString(),
-                    DocumentType = row["DocumentType"].ToString(),
-                    Purpose = row["Purpose"].ToString(),
+                    QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                    DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                    Purpose = row["Purpose"]?.ToString() ?? string.Empty,
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
-                    Status = row["Status"].ToString()
+                    Status = row["Status"]?.ToString() ?? string.Empty,
+                    PaymentStatus = row["PaymentStatus"]?.ToString() ?? string.Empty,
+                    TotalAmount = row["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(row["TotalAmount"]) : 0m
                 });
             }
         }
 
         private async Task LoadAllRequests(int userId)
         {
-            var query = @"SELECT RequestId, QueueNumber, DocumentType, Purpose, Quantity, RequestDate, Status 
+            var query = @"SELECT RequestId, QueueNumber, DocumentType, Purpose, Quantity, RequestDate, Status, PaymentStatus, TotalAmount 
                          FROM DocumentRequests 
                          WHERE UserId = @UserId AND Status NOT IN ('Completed', 'Cancelled')
                          ORDER BY RequestDate DESC";
@@ -123,12 +126,14 @@ namespace ProjectCapstone.Pages.Dashboard
                 AllRequests.Add(new DocumentRequest
                 {
                     RequestId = Convert.ToInt32(row["RequestId"]),
-                    QueueNumber = row["QueueNumber"].ToString(),
-                    DocumentType = row["DocumentType"].ToString(),
-                    Purpose = row["Purpose"].ToString(),
+                    QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                    DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                    Purpose = row["Purpose"]?.ToString() ?? string.Empty,
                     Quantity = Convert.ToInt32(row["Quantity"]),
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
-                    Status = row["Status"].ToString()
+                    Status = row["Status"]?.ToString() ?? string.Empty,
+                    PaymentStatus = row["PaymentStatus"]?.ToString() ?? string.Empty,
+                    TotalAmount = row["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(row["TotalAmount"]) : 0m
                 });
             }
         }
@@ -152,28 +157,32 @@ namespace ProjectCapstone.Pages.Dashboard
                 history.Add(new DocumentRequest
                 {
                     RequestId = Convert.ToInt32(row["RequestId"]),
-                    QueueNumber = row["QueueNumber"].ToString(),
-                    DocumentType = row["DocumentType"].ToString(),
-                    Purpose = row["Purpose"].ToString(),
+                    QueueNumber = row["QueueNumber"]?.ToString() ?? string.Empty,
+                    DocumentType = row["DocumentType"]?.ToString() ?? string.Empty,
+                    Purpose = row["Purpose"]?.ToString() ?? string.Empty,
                     Quantity = Convert.ToInt32(row["Quantity"]),
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
-                    Status = row["Status"].ToString(),
+                    Status = row["Status"]?.ToString() ?? string.Empty,
                     CompletedDate = row["CompletedDate"] != DBNull.Value ? Convert.ToDateTime(row["CompletedDate"]) : (DateTime?)null
                 });
             }
             return history;
         }
-    }
 
-    public class DocumentRequest
-    {
-        public int RequestId { get; set; }
-        public string QueueNumber { get; set; }
-        public string DocumentType { get; set; }
-        public string Purpose { get; set; }
-        public int Quantity { get; set; }
-        public DateTime RequestDate { get; set; }
-        public string Status { get; set; }
-        public DateTime? CompletedDate { get; set; }
+        public class DocumentRequest
+        {
+            public int RequestId { get; set; }
+            public string QueueNumber { get; set; } = string.Empty;
+            public string DocumentType { get; set; } = string.Empty;
+            public string Purpose { get; set; } = string.Empty;
+            public int Quantity { get; set; }
+            public DateTime RequestDate { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public DateTime? CompletedDate { get; set; }
+
+            // Added for payment UI
+            public string PaymentStatus { get; set; } = string.Empty;
+            public decimal TotalAmount { get; set; }
+        }
     }
 }
