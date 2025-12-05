@@ -3,7 +3,6 @@
 @{
     Layout = null;
 }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,12 +45,13 @@
 
         .sidebar-logo {
             width: 150px;
-            height: 150x;
+            height: 150px;
             margin: 0 auto 15px;
             border-radius: 50%;
             overflow: hidden;
-            background: #0d5c2f padding: 5px;
-            border: #0d5c2f;
+            background: #0d5c2f;
+            padding: 5px;
+            border: 4px solid white;
         }
 
             .sidebar-logo img {
@@ -242,11 +242,14 @@
             color: white;
             font-weight: 600;
             transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
 
             .btn-primary-custom:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(13, 92, 47, 0.3);
+                box-shadow: 0 5px 15px rgba(13,92,47,0.3);
+                color: white;
             }
 
         .table-custom {
@@ -289,9 +292,14 @@
             color: #155724;
         }
 
-        .badge-completed {
+        .badge-active {
             background: #d1ecf1;
             color: #004085;
+        }
+
+        .badge-completed {
+            background: #d4edda;
+            color: #155724;
         }
 
         .badge-cancelled {
@@ -317,7 +325,6 @@
                 opacity: 0.3;
             }
 
-        /* Profile Section */
         .profile-section {
             display: none;
         }
@@ -325,96 +332,6 @@
             .profile-section.active {
                 display: block;
             }
-
-        .profile-card {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .profile-header {
-            margin-bottom: 30px;
-        }
-
-        .profile-info {
-            margin-bottom: 25px;
-        }
-
-        .profile-label {
-            font-size: 13px;
-            color: #718096;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .profile-value {
-            font-size: 16px;
-            color: #2d3748;
-            padding: 10px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        /* Request Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-            .modal.active {
-                display: flex;
-            }
-
-        .modal-content {
-            background: white;
-            padding: 0;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            background: #1a5f3f;
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px 15px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-            .modal-header h3 {
-                margin: 0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-        }
-
-        .modal-body {
-            padding: 30px;
-        }
 
         .form-group {
             margin-bottom: 20px;
@@ -444,16 +361,8 @@
             .form-control-custom:focus {
                 outline: none;
                 border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
             }
-
-            .form-control-custom::placeholder {
-                color: #a0aec0;
-            }
-
-        select.form-control-custom {
-            cursor: pointer;
-        }
 
         .processing-time {
             background: #e6f7f0;
@@ -519,44 +428,36 @@
             <h3>CDM Document Request</h3>
             <p>Student Portal</p>
         </div>
-
         <ul class="nav-menu">
             <li class="nav-item">
                 <a href="#" class="nav-link active" onclick="showSection(event, 'dashboard'); return false;">
-                    <i class="fas fa-home"></i>
-                    Dashboard
+                    <i class="fas fa-home"></i> Dashboard
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'requests'); return false;">
-                    <i class="fas fa-file-alt"></i>
-                    My Requests
+                    <i class="fas fa-file-alt"></i> My Requests
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'newrequest'); return false;">
-                    <i class="fas fa-plus-circle"></i>
-                    New Request
+                    <i class="fas fa-plus-circle"></i> New Request
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'history'); return false;">
-                    <i class="fas fa-history"></i>
-                    History
+                    <i class="fas fa-history"></i> History
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'profile'); return false;">
-                    <i class="fas fa-user"></i>
-                    Profile
+                    <i class="fas fa-user"></i> Profile
                 </a>
             </li>
         </ul>
-
         <div class="logout-btn">
             <a href="/Logout" class="nav-link">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
+                <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>
     </div>
@@ -572,9 +473,7 @@
                     <div style="font-weight: 600; text-align: right;">@Model.FullName</div>
                     <div style="font-size: 13px; color: #718096; text-align: right;">@Model.StudentNumber</div>
                 </div>
-                <div class="user-avatar">
-                    @Model.FullName.Substring(0, 1)
-                </div>
+                <div class="user-avatar">@Model.FullName.Substring(0, 1).ToUpper()</div>
             </div>
         </div>
 
@@ -582,34 +481,23 @@
         <div id="dashboard-section" class="profile-section active">
             <div class="stats-grid">
                 <div class="stat-card pending">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-value" id="pending-count">@Model.PendingCount</div>
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value">@Model.PendingCount</div>
                     <div class="stat-label">Pending Requests</div>
                 </div>
-
                 <div class="stat-card processing">
-                    <div class="stat-icon">
-                        <i class="fas fa-spinner"></i>
-                    </div>
-                    <div class="stat-value" id="processing-count">@Model.ProcessingCount</div>
+                    <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                    <div class="stat-value">@Model.ProcessingCount</div>
                     <div class="stat-label">Processing</div>
                 </div>
-
                 <div class="stat-card ready">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-value" id="ready-count">@Model.ReadyCount</div>
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-value">@Model.ReadyCount</div>
                     <div class="stat-label">Ready for Pickup</div>
                 </div>
-
                 <div class="stat-card total">
-                    <div class="stat-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="stat-value" id="total-count">@Model.TotalRequests</div>
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value">@Model.TotalRequests</div>
                     <div class="stat-label">Total Requests</div>
                 </div>
             </div>
@@ -617,14 +505,13 @@
             <div class="content-card">
                 <div class="card-header">
                     <h3 class="card-title">Recent Document Requests</h3>
-                    <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')">
+                    <a href="#" class="btn btn-primary-custom" onclick="showSection(event, 'newrequest'); return false;">
                         <i class="fas fa-plus me-2"></i>New Request
-                    </button>
+                    </a>
                 </div>
-
                 @if (Model.RecentRequests != null && Model.RecentRequests.Count > 0)
                 {
-                    <table class="table-custom">
+                    <table class="table table-custom">
                         <thead>
                             <tr>
                                 <th>Queue #</th>
@@ -643,9 +530,7 @@
                                     <td>@request.Purpose</td>
                                     <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
                                     <td>
-                                        <span class="badge-status badge-@request.Status.ToLower()">
-                                            @request.Status
-                                        </span>
+                                        <span class="badge-status badge-@request.Status.ToLower()">@request.Status</span>
                                     </td>
                                 </tr>
                             }
@@ -657,104 +542,9 @@
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
                         <h4>No document requests yet</h4>
-                        <p>Click "New Request" to submit your first document request</p>
+                        <p>Click 'New Request' to submit your first document request</p>
                     </div>
                 }
-            </div>
-        </div>
-
-        <!-- Profile Section -->
-        <div id="profile-section" class="profile-section">
-            <div class="profile-card">
-                <div class="profile-header">
-                    <h2 style="color: #2d3748; margin-bottom: 10px;">My Profile</h2>
-                </div>
-
-                <div class="profile-info">
-                    <div class="profile-label">Student ID</div>
-                    <div class="profile-value">@Model.StudentNumber</div>
-                </div>
-
-                <div class="profile-info">
-                    <div class="profile-label">Full Name</div>
-                    <div class="profile-value">@Model.FullName</div>
-                </div>
-
-                <div class="profile-info">
-                    <div class="profile-label">Email Address</div>
-                    <div class="profile-value">@HttpContext.Session.GetString("Email")</div>
-                </div>
-
-                <div class="profile-info">
-                    <div class="profile-label">Course</div>
-                    <div class="profile-value">BS Computer Science</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- New Request Section -->
-        <div id="newrequest-section" class="profile-section">
-            <div class="content-card">
-                <div class="card-header">
-                    <h3 class="card-title">Request a Document</h3>
-                </div>
-
-                <form id="requestForm" onsubmit="submitRequest(event)">
-                    <div class="form-group">
-                        <label>Document Type <span class="required">*</span></label>
-                        <select class="form-control-custom" id="documentType" required>
-                            <option value="">Select document type</option>
-                            <option value="Transcript of Records (TOR)">Transcript of Records (TOR)</option>
-                            <option value="Certificate of Enrollment">Certificate of Enrollment</option>
-                            <option value="Certificate of Grades">Certificate of Grades</option>
-                            <option value="Certification of Graduation (COG)">Certification of Graduation (COG)</option>
-                            <option value="Good Moral Certificate">Good Moral Certificate</option>
-                            <option value="Form 137">Form 137</option>
-                            <option value="Diploma">Diploma</option>
-                            <option value="Honorable Dismissal">Honorable Dismissal</option>
-                            <option value="Certification, Authentication & Verification (CAV)">Certification, Authentication & Verification (CAV)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Purpose <span class="required">*</span></label>
-                        <input type="text" class="form-control-custom" id="purpose"
-                               placeholder="e.g., Job Application, Transfer, Scholarship" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Number of Copies <span class="required">*</span></label>
-                        <input type="number" class="form-control-custom" id="copies"
-                               min="1" max="10" value="1" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Delivery Method <span class="required">*</span></label>
-                        <select class="form-control-custom" id="deliveryMethod" required>
-                            <option value="">Select delivery method</option>
-                            <option value="Pick-up">Pick-up at Registrar Office</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Additional Notes (Optional)</label>
-                        <textarea class="form-control-custom" id="notes" rows="3"
-                                  placeholder="Any special instructions or additional information"></textarea>
-                    </div>
-
-                    <div class="processing-time">
-                        <p><strong>Processing Time:</strong></p>
-                        <p>Regular documents: 3-5 business days</p>
-                        <p>Rush processing: 1-2 business days (additional fee applies)</p>
-                    </div>
-
-                    <button type="submit" class="btn-submit">
-                        <i class="fas fa-paper-plane"></i> Submit Request
-                    </button>
-                    <button type="button" class="btn-cancel" onclick="showSection(event, 'dashboard')">
-                        Cancel
-                    </button>
-                </form>
             </div>
         </div>
 
@@ -764,10 +554,9 @@
                 <div class="card-header">
                     <h3 class="card-title">My Document Requests</h3>
                 </div>
-
                 @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
                 {
-                    <table class="table-custom">
+                    <table class="table table-custom">
                         <thead>
                             <tr>
                                 <th>Queue #</th>
@@ -801,316 +590,243 @@
                                         }
                                     </td>
                                     <td>
-                                        <span class="badge-status badge-@request.Status.ToLower()">
-                                            @request.Status
-                                        </span>
+                                        <span class="badge-status badge-@request.Status.ToLower()">@request.Status</span>
                                     </td>
-                                    <td>
-                                        @if (request.TotalAmount > 0)
+
+
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @if (request.TotalAmount > 0)
+                                    {
+                                        @if (string.Equals(request.PaymentStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
+                                                                        string.Equals(request.PaymentStatus, "Pending Payment", StringComparison.OrdinalIgnoreCase))
                                         {
-                                            if (string.Equals(request.PaymentStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
-                                                string.Equals(request.PaymentStatus, "Pending Payment", StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <a class="btn btn-sm btn-primary" href="/DocumentRequest/Payment?requestId=@request.RequestId">Upload Payment</a>
-                                            }
-                                            else if (string.Equals(request.PaymentStatus, "Pending Verification", StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <span class="text-warning">Awaiting Verification</span>
-                                                <a class="btn btn-sm btn-outline-primary" href="/DocumentRequest/Payment?requestId=@request.RequestId">View</a>
-                                            }
-                                            else if (string.Equals(request.PaymentStatus, "Verified", StringComparison.OrdinalIgnoreCase) || string.Equals(request.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <span class="text-success">Paid</span>
-                                            }
-                                            else if (string.Equals(request.PaymentStatus, "Rejected", StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <a class="btn btn-sm btn-warning" href="/DocumentRequest/Payment?requestId=@request.RequestId">Re-upload</a>
-                                            }
-                                            else
-                                            {
-                                                <span>@request.PaymentStatus</span>
-                                            }
+                                            <a class="btn btn-sm btn-primary" href="/DocumentRequest/Payment?requestId=@request.RequestId" style="display: inline-block;">
+                                                Upload Payment
+                                            </a>
+                                        }
+                                        else if (string.Equals(request.PaymentStatus, "Pending Verification", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="text-warning">Awaiting Verification</span>
+                                        }
+                                        else if (string.Equals(request.PaymentStatus, "Verified", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(request.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="text-success">✓ Paid</span>
+                                        }
+                                        else if (string.Equals(request.PaymentStatus, "Rejected", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <a class="btn btn-sm btn-warning" href="/DocumentRequest/Payment?requestId=@request.RequestId" style="display: inline-block;">
+                                                Re-upload
+                                            </a>
                                         }
                                         else
                                         {
-                                            <span class="text-muted">—</span>
+                                            <span class="text-muted">@request.PaymentStatus</span>
                                         }
-                                    </td>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                 
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <h4>No requests found</h4>
-                        <p>You haven't made any document requests yet</p>
-                        <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')" style="margin-top: 20px;">
-                            <i class="fas fa-plus me-2"></i>Create Your First Request
-                        </button>
-                    </div>
-                }
+                                
+
+                       
+
+
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No requests found</h4>
+                <p>You haven't made any document requests yet</p>
+                <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')" style="margin-top: 20px;">
+                    <i class="fas fa-plus me-2"></i>Create Your First Request
+                </button>
             </div>
+        }
+    </div>
+</div>
+
+<!-- New Request Section -->
+<div id="newrequest-section" class="profile-section">
+    <div class="content-card">
+        <div class="card-header">
+            <h3 class="card-title">Request a Document</h3>
         </div>
-
-        <!-- History Section -->
-        <div id="history-section" class="profile-section">
-            <div class="content-card">
-                <div class="card-header">
-                    <h3 class="card-title">Request History</h3>
-                </div>
-
-                @if (Model.HistoryRequests != null && Model.HistoryRequests.Count > 0)
-                {
-                    <table class="table-custom">
-                        <thead>
-                            <tr>
-                                <th>Queue #</th>
-                                <th>Document Type</th>
-                                <th>Purpose</th>
-                                <th>Copies</th>
-                                <th>Requested</th>
-                                <th>Completed</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var request in Model.HistoryRequests)
-                            {
-                                <tr>
-                                    <td><strong>@request.QueueNumber</strong></td>
-                                    <td>@request.DocumentType</td>
-                                    <td>@request.Purpose</td>
-                                    <td>@request.Quantity</td>
-                                    <td>@request.RequestDate.ToString("MMM dd, yyyy")</td>
-                                    <td>@(request.CompletedDate?.ToString("MMM dd, yyyy") ?? "-")</td>
-                                    <td>
-                                        <span class="badge-status badge-@request.Status.ToLower()">
-                                            @request.Status
-                                        </span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <div class="empty-state">
-                        <i class="fas fa-history"></i>
-                        <h4>No history yet</h4>
-                        <p>Completed and cancelled requests will appear here</p>
-                    </div>
-                }
+        <form id="requestForm" onsubmit="submitRequest(event)">
+            <div class="form-group">
+                <label>Document Type <span class="required">*</span></label>
+                <select class="form-control-custom" id="documentType" required>
+                    <option value="">Select document type</option>
+                    @foreach (var doc in Model.DocumentTypes)
+                    {
+                        <option value="@doc.DocumentTypeId"
+                                data-name="@doc.DocumentName"
+                                data-price="@doc.Amount"
+                                data-payment="@doc.RequiresPayment.ToString().ToLower()">
+                            @doc.DocumentName @(doc.RequiresPayment ? $"(₱{doc.Amount:N2})" : "(FREE)")
+                        </option>
+                    }
+                </select>
             </div>
+            <div class="form-group">
+                <label>Purpose <span class="required">*</span></label>
+                <input type="text" class="form-control-custom" id="purpose" placeholder="e.g., Job Application, Scholarship" required>
+            </div>
+            <div class="form-group">
+                <label>Number of Copies <span class="required">*</span></label>
+                <input type="number" class="form-control-custom" id="copies" min="1" max="10" value="1" required>
+            </div>
+            <div class="form-group">
+                <label>Delivery Method <span class="required">*</span></label>
+                <select class="form-control-custom" id="deliveryMethod" required>
+                    <option value="">Select delivery method</option>
+                    <option value="Pick-up">Pick-up at Registrar Office</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Additional Notes (Optional)</label>
+                <textarea class="form-control-custom" id="notes" rows="3" placeholder="Any special instructions"></textarea>
+            </div>
+            <div class="processing-time">
+                <p><strong>Processing Time:</strong></p>
+                <p>Regular documents: 3-5 business days</p>
+                <p>Rush processing: 1-2 business days (additional fee applies)</p>
+            </div>
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-paper-plane"></i> Submit Request
+            </button>
+            <button type="button" class="btn-cancel" onclick="showSection(event, 'dashboard')">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- History Section -->
+<div id="history-section" class="profile-section">
+    <div class="content-card">
+        <div class="card-header">
+            <h3 class="card-title">Request History</h3>
+        </div>
+        @if (Model.HistoryRequests != null && Model.HistoryRequests.Count > 0)
+        {
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Queue #</th>
+                        <th>Document Type</th>
+                        <th>Purpose</th>
+                        <th>Copies</th>
+                        <th>Requested</th>
+                        <th>Completed</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var request in Model.HistoryRequests)
+                    {
+                        <tr>
+                            <td><strong>@request.QueueNumber</strong></td>
+                            <td>@request.DocumentType</td>
+                            <td>@request.Purpose</td>
+                            <td>@request.Quantity</td>
+                            <td>@request.RequestDate.ToString("MMM dd, yyyy")</td>
+                            <td>@(request.CompletedDate?.ToString("MMM dd, yyyy") ?? "—")</td>
+                            <td>
+                                <span class="badge-status badge-@request.Status.ToLower()">@request.Status</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-history"></i>
+                <h4>No history yet</h4>
+                <p>Completed and cancelled requests will appear here</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Profile Section -->
+<div id="profile-section" class="profile-section">
+    <div class="content-card">
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #2d3748; margin-bottom: 10px;">My Profile</h2>
+        </div>
+        <div style="margin-bottom: 25px;">
+            <div style="font-size: 13px; color: #718096; margin-bottom: 5px; font-weight: 600;">Student ID</div>
+            <div style="font-size: 16px; color: #2d3748; padding: 10px 0; border-bottom: 1px solid #e2e8f0;">@Model.StudentNumber</div>
+        </div>
+        <div style="margin-bottom: 25px;">
+            <div style="font-size: 13px; color: #718096; margin-bottom: 5px; font-weight: 600;">Full Name</div>
+            <div style="font-size: 16px; color: #2d3748; padding: 10px 0; border-bottom: 1px solid #e2e8f0;">@Model.FullName</div>
+        </div>
+        <div style="margin-bottom: 25px;">
+            <div style="font-size: 13px; color: #718096; margin-bottom: 5px; font-weight: 600;">Email Address</div>
+            <div style="font-size: 16px; color: #2d3748; padding: 10px 0; border-bottom: 1px solid #e2e8f0;">@HttpContext.Session.GetString("Email")</div>
         </div>
     </div>
+</div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        console.log('🔍 Script loaded - checking sections...');
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    function showSection(e, section) {
+        e.preventDefault();
+        document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(section + '-section')?.classList.add('active');
+        e.target.closest('.nav-link')?.classList.add('active');
+    }
+    async function submitRequest(e) {
+        e.preventDefault();
 
-        // Check if sections exist
-        const sections = ['dashboard', 'profile', 'newrequest', 'requests', 'history'];
-        sections.forEach(section => {
-            const elem = document.getElementById(section + '-section');
-            if (elem) {
-                console.log('✅ Found section:', section + '-section');
-            } else {
-                console.error('❌ Missing section:', section + '-section');
-            }
-        });
+        // Get the selected option element
+        const selectElement = document.getElementById('documentType');
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
 
-        function showSection(event, sectionName) {
-            console.log('🎯 showSection called with:', sectionName);
+        const data = {
+            documentTypeId: parseInt(selectElement.value),
+            documentType: selectedOption.getAttribute('data-name'), // ADD THIS - sends the name
+            purpose: document.getElementById('purpose').value,
+            quantity: parseInt(document.getElementById('copies').value),
+            deliveryMethod: document.getElementById('deliveryMethod').value,
+            notes: document.getElementById('notes').value
+        };
 
-            // Prevent default action
-            if (event) {
-                event.preventDefault();
-            }
+        console.log('Submitting request:', data);
 
-            // Hide all sections
-            const allSections = document.querySelectorAll('.profile-section');
-            console.log('📦 Found sections:', allSections.length);
-
-            allSections.forEach(section => {
-                section.classList.remove('active');
+        try {
+            const res = await fetch('/api/DocumentRequest/Submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
-
-            // Remove active class from all nav links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            // Show target section
-            const targetSection = document.getElementById(sectionName + '-section');
-            if (targetSection) {
-                targetSection.classList.add('active');
-                console.log('✅ Showing section:', sectionName);
+            const json = await res.json();
+            if (res.ok && json.success) {
+                alert(`Request submitted successfully!\nQueue #: ${json.queueNumber}`);
+                document.getElementById('requestForm').reset();
+                showSection({ preventDefault: () => {}, target: document.querySelector('[onclick*="dashboard"]') }, 'dashboard');
+                setTimeout(() => location.reload(), 800);
             } else {
-                console.error('❌ Section not found:', sectionName + '-section');
-                alert('Error: Section "' + sectionName + '" not found. Please check the console.');
-                return;
+                alert('Error: ' + (json.message || 'Please try again'));
             }
-
-            // Add active class to clicked nav link
-            if (event && event.target) {
-                const clickedLink = event.target.closest('.nav-link');
-                if (clickedLink) {
-                    clickedLink.classList.add('active');
-                }
-            }
+        } catch (err) {
+            console.error('Error:', err);
+            alert('Network error: ' + err.message);
         }
+    }
 
-        async function submitRequest(event) {
-            event.preventDefault();
-
-            const formData = {
-                documentType: document.getElementById('documentType').value,
-                purpose: document.getElementById('purpose').value,
-                quantity: parseInt(document.getElementById('copies').value),
-                deliveryMethod: document.getElementById('deliveryMethod').value,
-                notes: document.getElementById('notes').value || ''
-            };
-
-            console.log('Submitting request:', formData);
-
-            try {
-                const response = await fetch('/api/DocumentRequest/Submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    alert('✅ Request submitted successfully!\n\nYour queue number is: ' + result.queueNumber);
-
-                    // Reset form
-                    document.getElementById('requestForm').reset();
-
-                    // Update stats
-                    await updateStats();
-
-                    // Go back to dashboard
-                    const fakeEvent = { preventDefault: () => {}, target: document.querySelector('.nav-link') };
-                    showSection(fakeEvent, 'dashboard');
-
-                    // Reload to show updated data
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    alert('❌ Failed to submit request: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('❌ An error occurred: ' + error.message);
-            }
-        }
-
-        async function updateStats() {
-            try {
-                const response = await fetch('/api/DocumentRequest/Stats');
-                if (response.ok) {
-                    const stats = await response.json();
-                    document.getElementById('pending-count').textContent = stats.pending;
-                    document.getElementById('processing-count').textContent = stats.processing;
-                    document.getElementById('ready-count').textContent = stats.ready;
-                    document.getElementById('total-count').textContent = stats.total;
-                    console.log('✅ Stats updated:', stats);
-                }
-            } catch (error) {
-                console.error('Error updating stats:', error);
-            }
-        }
-
-        async function loadAllRequests() {
-            const container = document.getElementById('all-requests-container');
-
-            // Show loading message
-            container.innerHTML = '<p style="text-align: center; color: #718096; padding: 40px;">⏳ Loading requests...</p>';
-
-            console.log('📂 Loading all requests...');
-
-            try {
-                const response = await fetch('/api/DocumentRequest/MyRequests');
-
-                console.log('📡 API Response Status:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const requests = await response.json();
-                console.log('✅ Loaded requests:', requests);
-                console.log('📊 Number of requests:', requests.length);
-
-                if (requests.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h4>No requests found</h4>
-                            <p>You haven't made any document requests yet</p>
-                            <button class="btn btn-primary-custom" onclick="showSection(event, 'newrequest')" style="margin-top: 20px;">
-                                <i class="fas fa-plus me-2"></i>Create Your First Request
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = `
-                        <table class="table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Queue #</th>
-                                    <th>Document Type</th>
-                                    <th>Purpose</th>
-                                    <th>Copies</th>
-                                    <th>Date Requested</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${requests.map(req => `
-                                    <tr>
-                                        <td><strong>${req.queueNumber}</strong></td>
-                                        <td>${req.documentType}</td>
-                                        <td>${req.purpose}</td>
-                                        <td>${req.quantity}</td>
-                                        <td>${new Date(req.requestDate).toLocaleString()}</td>
-                                        <td>
-                                            <span class="badge-status badge-${req.status.toLowerCase()}">
-                                                ${req.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                }
-            } catch (error) {
-                console.error('❌ Error loading requests:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e53e3e; margin-bottom: 20px;"></i>
-                        <h4 style="color: #e53e3e;">Error Loading Requests</h4>
-                        <p style="color: #718096;">${error.message}</p>
-                        <p style="color: #999; font-size: 12px; margin-top: 10px;">
-                            Check the browser console (F12) for more details
-                        </p>
-                        <button class="btn-cancel" onclick="loadAllRequests()" style="margin-top: 20px; width: auto; padding: 10px 30px;">
-                            <i class="fas fa-redo me-2"></i>Retry
-                        </button>
-                    </div>
-                `;
-            }
-        }
-    </script>
+</script>
 </body>
 </html>

@@ -18,6 +18,8 @@ namespace ProjectCapstone.Pages.Dashboard
         public List<DocumentRequest> RecentRequests { get; set; }
         public List<DocumentRequest> AllRequests { get; set; }
         public List<DocumentRequest> HistoryRequests { get; set; }
+        public List<ProjectCapstone.Models.DocumentType> DocumentTypes { get; set; }
+
 
         public StudentModel(MongoDBService mongoDBService, ILogger<StudentModel> logger)
         {
@@ -26,6 +28,7 @@ namespace ProjectCapstone.Pages.Dashboard
             RecentRequests = new List<DocumentRequest>();
             AllRequests = new List<DocumentRequest>();
             HistoryRequests = new List<DocumentRequest>();
+            DocumentTypes = new List<ProjectCapstone.Models.DocumentType>();
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -44,6 +47,7 @@ namespace ProjectCapstone.Pages.Dashboard
                 await LoadStatistics(userId.Value);
                 await LoadRecentRequests(userId.Value);
                 await LoadAllRequests(userId.Value);
+                await LoadDocumentTypes();
             }
             catch (Exception ex)
             {
@@ -51,6 +55,19 @@ namespace ProjectCapstone.Pages.Dashboard
             }
 
             return Page();
+        }
+
+        private async Task LoadDocumentTypes()
+        {
+            try
+            {
+                DocumentTypes = await _mongoDBService.GetActiveDocumentTypesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error loading document types: {ex.Message}");
+                DocumentTypes = new List<ProjectCapstone.Models.DocumentType>();
+            }
         }
 
         private async Task LoadStatistics(int userId)
@@ -97,6 +114,8 @@ namespace ProjectCapstone.Pages.Dashboard
                     TotalAmount = r.TotalAmount
                 }).ToList();
         }
+
+    
 
         public async Task<List<DocumentRequest>> LoadHistoryAsync(int userId)
         {

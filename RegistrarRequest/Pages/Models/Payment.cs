@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace ProjectCapstone.Models
 {
+    [BsonIgnoreExtraElements]
     public class Payment
     {
         [BsonId]
@@ -44,5 +45,8 @@ namespace ProjectCapstone.Models
 
         [BsonElement("updatedDate")]
         public DateTime? UpdatedDate { get; set; }
+
+        [BsonElement("notes")]
+        public string? Notes { get; set; }
     }
 }

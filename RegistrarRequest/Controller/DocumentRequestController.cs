@@ -22,7 +22,6 @@ namespace ProjectCapstone.Controllers
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
-
         [HttpPost("Submit")]
         public async Task<IActionResult> SubmitRequest([FromBody] DocumentRequestDto request)
         {
@@ -40,29 +39,50 @@ namespace ProjectCapstone.Controllers
                     return Unauthorized(new { success = false, message = "User not logged in" });
                 }
 
+                // ADDED: Look up the document type to get pricing
+                var documentType = await _mongoDBService.GetDocumentTypeByIdAsync(request.DocumentTypeId);
+                if (documentType == null)
+                {
+                    _logger.LogWarning($"⚠️ Document type not found: {request.DocumentTypeId}");
+                    return BadRequest(new { success = false, message = "Invalid document type" });
+                }
+
                 var queueNumber = SecurityHelper.GenerateQueueNumber();
                 _logger.LogInformation($"🎫 Generated queue number: {queueNumber}");
+
+                // ADDED: Calculate total amount based on document price and quantity
+                decimal totalAmount = documentType.Amount * request.Quantity;
+
+                // ADDED: Determine payment status
+                string paymentStatus = documentType.RequiresPayment ? "Pending Payment" : "Not Required";
+                string currentStage = documentType.RequiresPayment ? "Awaiting Payment" : "Pending Review";
 
                 var documentRequest = new DocumentRequest
                 {
                     UserId = userId.Value,
-                    DocumentType = SecurityHelper.SanitizeInput(request.DocumentType ?? string.Empty),
+                    DocumentTypeId = request.DocumentTypeId, // ADDED
+                    DocumentType = SecurityHelper.SanitizeInput(request.DocumentType ?? documentType.DocumentName), // Use name from DB if not provided
                     Purpose = SecurityHelper.SanitizeInput(request.Purpose ?? string.Empty),
                     Quantity = request.Quantity,
+                    TotalAmount = totalAmount, // ADDED
+                    PaymentStatus = paymentStatus, // ADDED
+                    CurrentStage = currentStage, // ADDED
                     RequestDate = DateTime.UtcNow,
-                    Status = "Pending",
+                    Status = "Active", // CHANGED from "Pending" to "Active"
                     QueueNumber = queueNumber,
                     Notes = SecurityHelper.SanitizeInput(request.Notes ?? string.Empty)
                 };
 
                 await _mongoDBService.CreateRequestAsync(documentRequest);
 
-                _logger.LogInformation($"✅ Document request submitted. Queue#: {queueNumber}, UserId: {userId}");
+                _logger.LogInformation($"✅ Document request submitted. Queue#: {queueNumber}, UserId: {userId}, Amount: ₱{totalAmount}");
 
                 return Ok(new
                 {
                     success = true,
                     queueNumber = queueNumber,
+                    totalAmount = totalAmount,
+                    requiresPayment = documentType.RequiresPayment,
                     message = "Request submitted successfully"
                 });
             }
@@ -72,6 +92,7 @@ namespace ProjectCapstone.Controllers
                 return StatusCode(500, new { success = false, message = "Error submitting request: " + ex.Message });
             }
         }
+
 
         [HttpGet("Stats")]
         public async Task<IActionResult> GetStats()
@@ -185,6 +206,7 @@ namespace ProjectCapstone.Controllers
 
     public class DocumentRequestDto
     {
+        public int DocumentTypeId { get; set; }
         public string? DocumentType { get; set; }
         public string? Purpose { get; set; }
         public int Quantity { get; set; }

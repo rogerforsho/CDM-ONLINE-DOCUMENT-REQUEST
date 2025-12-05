@@ -51,7 +51,13 @@ namespace ProjectCapstone.Models
         [BsonElement("completedDate")]
         public DateTime? CompletedDate { get; set; }
 
+        [BsonElement("ReadyDate")]
+        public DateTime? ReadyDate { get; set; }
+
         [BsonElement("notes")]
         public string? Notes { get; set; }
+
+      
+
     }
 }

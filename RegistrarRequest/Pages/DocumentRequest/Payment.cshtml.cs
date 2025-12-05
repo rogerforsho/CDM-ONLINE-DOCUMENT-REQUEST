@@ -1,48 +1,29 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using ProjectCapstone.Models;
 using ProjectCapstone.Services;
 
 namespace ProjectCapstone.Pages.DocumentRequest
 {
+    [IgnoreAntiforgeryToken]
     public class PaymentModel : PageModel
     {
         private readonly MongoDBService _mongoDBService;
-        private readonly ILogger<PaymentModel> _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<PaymentModel> _logger;
 
-        [BindProperty(SupportsGet = true)]
-        public int RequestId { get; set; }
-
-        [BindProperty]
-        public string PaymentMethod { get; set; } = string.Empty;
-
-        [BindProperty]
-        public string ReferenceNumber { get; set; } = string.Empty;
-
-        [BindProperty]
-        public IFormFile? PaymentProofFile { get; set; }
-
-        [BindProperty]
-        public string Notes { get; set; } = string.Empty;
-
-        [TempData]
-        public string ErrorMessage { get; set; } = string.Empty;
-
-        [TempData]
-        public string SuccessMessage { get; set; } = string.Empty;
-
-        public Models.DocumentRequest? Request { get; set; }
+        public Models.DocumentRequest? DocumentRequest { get; set; }
         public Payment? ExistingPayment { get; set; }
 
-        public PaymentModel(MongoDBService mongoDBService, ILogger<PaymentModel> logger, IWebHostEnvironment environment)
+        public PaymentModel(MongoDBService mongoDBService, IWebHostEnvironment environment, ILogger<PaymentModel> logger)
         {
             _mongoDBService = mongoDBService;
-            _logger = logger;
             _environment = environment;
+            _logger = logger;
         }
 
-        public async Task<IActionResult> OnGetAsync()
+        public async Task<IActionResult> OnGetAsync(int requestId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -50,21 +31,13 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return RedirectToPage("/Login");
             }
 
-            await LoadRequestDetails(userId.Value);
-
-            if (Request == null)
+            DocumentRequest = await _mongoDBService.GetRequestByIdAsync(requestId);
+            if (DocumentRequest == null || DocumentRequest.UserId != userId.Value)
             {
-                ErrorMessage = "Request not found or you don't have permission to view it.";
-                return Page();
+                return RedirectToPage("/Dashboard/Student");
             }
 
-            await LoadExistingPayment();
-
-            if (ExistingPayment != null)
-            {
-                PaymentMethod = ExistingPayment.PaymentMethod ?? string.Empty;
-                ReferenceNumber = ExistingPayment.ReferenceNumber ?? string.Empty;
-            }
+            ExistingPayment = await _mongoDBService.GetPaymentByRequestIdAsync(requestId);
 
             return Page();
         }
@@ -77,164 +50,87 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return RedirectToPage("/Login");
             }
 
-            await LoadRequestDetails(userId.Value);
-            if (Request == null)
-            {
-                ErrorMessage = "Request not found or you don't have permission to view it.";
-                return Page();
-            }
+            // Get values directly from Request object
+            int requestId = int.Parse(Request.Form["requestId"]);
+            string paymentMethod = Request.Form["PaymentMethod"];
+            string? referenceNumber = Request.Form["ReferenceNumber"];
+            IFormFile? proofImage = Request.Form.Files["ProofImage"];
 
-            await LoadExistingPayment();
+            _logger.LogInformation($"Payment upload - RequestId: {requestId}, Method: {paymentMethod}, File: {proofImage?.FileName}");
 
-            if (!ModelState.IsValid || PaymentProofFile == null)
+            DocumentRequest = await _mongoDBService.GetRequestByIdAsync(requestId);
+            if (DocumentRequest == null || DocumentRequest.UserId != userId.Value)
             {
-                ErrorMessage = "Please fill in all required fields and upload payment proof.";
-                await LoadRequestDetails(userId.Value);
-                return Page();
+                TempData["ErrorMessage"] = "Request not found or access denied.";
+                return RedirectToPage("/Dashboard/Student");
             }
 
             try
             {
-                // Validate file
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
-                var fileExtension = Path.GetExtension(PaymentProofFile.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
+                if (proofImage == null || proofImage.Length == 0)
                 {
-                    ErrorMessage = "Invalid file format. Only JPG, PNG, and PDF files are allowed.";
-                    await LoadRequestDetails(userId.Value);
+                    TempData["ErrorMessage"] = "Please upload a payment proof image.";
                     return Page();
                 }
 
-                if (PaymentProofFile.Length > 5 * 1024 * 1024)
+                _logger.LogInformation($"File received: {proofImage.FileName}, Size: {proofImage.Length} bytes");
+
+                string imagePath = await SavePaymentProof(proofImage, requestId);
+
+                _logger.LogInformation($"Image saved to: {imagePath}");
+
+                var payment = new Payment
                 {
-                    ErrorMessage = "File size must be less than 5MB.";
-                    await LoadRequestDetails(userId.Value);
-                    return Page();
-                }
+                    RequestId = requestId,
+                    Amount = DocumentRequest.TotalAmount,
+                    PaymentMethod = paymentMethod,
+                    ReferenceNumber = string.IsNullOrEmpty(referenceNumber) ? null : referenceNumber,
+                    PaymentProofUrl = imagePath,
+                    PaymentDate = DateTime.UtcNow,
+                    Status = "Pending"
+                };
 
-                // Create uploads directory
-                var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "receipts");
-                if (!Directory.Exists(uploadsPath))
-                {
-                    Directory.CreateDirectory(uploadsPath);
-                }
+                await _mongoDBService.CreatePaymentAsync(payment);
+                _logger.LogInformation($"Payment record created with PaymentId: {payment.PaymentId}");
 
-                // Generate unique filename
-                var fileName = $"{RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
-                var filePath = Path.Combine(uploadsPath, fileName);
-                var relativeFilePath = $"/uploads/receipts/{fileName}";
-
-                // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await PaymentProofFile.CopyToAsync(stream);
-                }
-
-                if (ExistingPayment != null)
-                {
-                    if (string.Equals(ExistingPayment.Status, "Verified", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ErrorMessage = "Payment already verified. No further uploads allowed.";
-                        return RedirectToPage("/Dashboard/Student");
-                    }
-
-                    // Update existing payment
-                    ExistingPayment.Amount = Request.TotalAmount;
-                    ExistingPayment.PaymentMethod = PaymentMethod;
-                    ExistingPayment.ReferenceNumber = ReferenceNumber;
-                    ExistingPayment.PaymentProofUrl = relativeFilePath;
-                    ExistingPayment.Status = "Pending";
-                    ExistingPayment.PaymentDate = DateTime.UtcNow;
-                    ExistingPayment.RejectionReason = null;
-                    ExistingPayment.UpdatedDate = DateTime.UtcNow;
-
-                    await _mongoDBService.UpdatePaymentAsync(ExistingPayment.PaymentId, ExistingPayment);
-                }
-                else
-                {
-                    // Create new payment
-                    var newPayment = new Payment
-                    {
-                        RequestId = RequestId,
-                        Amount = Request.TotalAmount,
-                        PaymentMethod = PaymentMethod,
-                        ReferenceNumber = ReferenceNumber,
-                        PaymentProofUrl = relativeFilePath,
-                        Status = "Pending",
-                        PaymentDate = DateTime.UtcNow
-                    };
-
-                    await _mongoDBService.CreatePaymentAsync(newPayment);
-                }
-
-                // Update request status
                 await _mongoDBService.UpdateRequestStageAsync(
-                    RequestId,
+                    requestId,
                     "Payment Verification",
                     "Pending Verification"
                 );
 
-                // Create workflow history
-                await _mongoDBService.CreateWorkflowHistoryAsync(new WorkflowHistory
-                {
-                    RequestId = RequestId,
-                    Stage = "Payment Verification",
-                    Action = "Payment Proof Uploaded",
-                    Comments = $"Payment Method: {PaymentMethod}, Ref: {ReferenceNumber}. {Notes}",
-                    ProcessedBy = userId.Value
-                });
+                _logger.LogInformation($"Request {requestId} updated to Pending Verification");
 
-                _logger.LogInformation($"Payment uploaded for RequestId={RequestId} by UserId={userId}");
-
-                SuccessMessage = "Payment proof uploaded successfully! Waiting for verification from Accounting Office.";
+                TempData["SuccessMessage"] = "Payment proof uploaded successfully! Waiting for admin verification.";
                 return RedirectToPage("/Dashboard/Student");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error uploading payment: {ex.Message}");
-                ErrorMessage = "An error occurred while uploading payment proof. Please try again.";
-                await LoadRequestDetails(userId.Value);
+                _logger.LogError($"Error uploading payment: {ex.Message}\n{ex.StackTrace}");
+                TempData["ErrorMessage"] = $"Failed to upload payment: {ex.Message}";
                 return Page();
             }
         }
 
-        private async Task LoadRequestDetails(int userId)
+        private async Task<string> SavePaymentProof(IFormFile file, int requestId)
         {
-            try
+            if (file == null || file.Length == 0)
             {
-                var request = await _mongoDBService.GetRequestByIdAsync(RequestId);
+                throw new Exception("No file uploaded");
+            }
 
-                if (request != null && request.UserId == userId)
-                {
-                    Request = new Models.DocumentRequest
-                    {
-                        RequestId = request.RequestId,
-                        QueueNumber = request.QueueNumber,
-                        DocumentType = request.DocumentType,
-                        Quantity = request.Quantity,
-                        TotalAmount = request.TotalAmount,
-                        CurrentStage = request.CurrentStage,
-                        PaymentStatus = request.PaymentStatus
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error loading request details: {ex.Message}");
-            }
-        }
+            var uploadsPath = Path.Combine(_environment.WebRootPath, "uploads", "payments");
+            Directory.CreateDirectory(uploadsPath);
 
-        private async Task LoadExistingPayment()
-        {
-            try
+            var fileName = $"payment_{requestId}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                ExistingPayment = await _mongoDBService.GetPaymentByRequestIdAsync(RequestId);
+                await file.CopyToAsync(stream);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error loading existing payment: {ex.Message}");
-            }
+
+            return $"/uploads/payments/{fileName}";
         }
     }
 }

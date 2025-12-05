@@ -1,319 +1,399 @@
 ﻿@page
-@using ProjectCapstone.Models
-
 @model ProjectCapstone.Pages.DocumentRequest.PaymentModel
 @{
-    ViewData["Title"] = "Upload Payment";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Payment - CDM Document Request</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0"><i class="fas fa-money-bill-wave"></i> Payment Required</h4>
-                </div>
-                <div class="card-body">
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
 
-                    @if (Model.Request != null)
-                    {
-                        <!-- Request Summary -->
-                        <div class="alert alert-info">
-                            <h5 class="alert-heading"><i class="fas fa-info-circle"></i> Request Summary</h5>
-                            <hr>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Queue Number:</strong><br>
-                                    <span class="text-primary fs-5">@Model.Request.QueueNumber</span>
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Document Type:</strong><br>
-                                    @Model.Request.DocumentType
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-6">
-                                    <strong>Quantity:</strong> @Model.Request.Quantity copy(s)
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Amount Due:</strong>
-                                    <span class="text-success fs-5 fw-bold">₱@Model.Request.TotalAmount.ToString("N2")</span>
-                                </div>
-                            </div>
-                        </div>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
 
-                        <!-- Existing Payment Info -->
-                        @if (Model.ExistingPayment != null)
-                        {
-                            <div class="mb-3">
-                                <h5>Existing Payment</h5>
-                                <p>
-                                    <strong>Status:</strong>
-                                    @if (string.Equals(Model.ExistingPayment.Status, "Verified", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="badge bg-success">Verified</span>
-                                    }
-                                    else if (string.Equals(Model.ExistingPayment.Status, "Pending", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="badge bg-warning">Pending Verification</span>
-                                    }
-                                    else if (string.Equals(Model.ExistingPayment.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="badge bg-danger">Rejected</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">@Model.ExistingPayment.Status</span>
-                                    }
-                                </p>
+        .payment-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
 
-                                <p><strong>Method:</strong> @Model.ExistingPayment.PaymentMethod</p>
-                                <p><strong>Reference/OR:</strong> @Model.ExistingPayment.ReferenceNumber</p>
-                                <p><strong>Amount:</strong> ₱@Model.ExistingPayment.Amount.ToString("N2")</p>
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f5f7fa;
+        }
 
-                                @if (!string.IsNullOrWhiteSpace(Model.ExistingPayment.PaymentProofUrl))
-                                {
-                                    <p>
-                                        <a href="@Model.ExistingPayment.PaymentProofUrl" target="_blank" class="btn btn-outline-info btn-sm">
-                                            <i class="fas fa-file-image"></i> View Uploaded Proof
-                                        </a>
-                                    </p>
-                                }
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #2d3748;
+            transition: all 0.3s;
+        }
 
-                                @if (!string.IsNullOrWhiteSpace(Model.ExistingPayment.RejectionReason) && string.Equals(Model.ExistingPayment.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <div class="alert alert-danger">
-                                        <strong>Rejection Reason:</strong>
-                                        <div>@Model.ExistingPayment.RejectionReason</div>
-                                    </div>
-                                }
-                            </div>
-                        }
+            .back-btn:hover {
+                background: #cbd5e0;
+                transform: translateX(-3px);
+            }
 
-                        <!-- If already verified, do not allow re-upload -->
-                        @if (Model.ExistingPayment != null && string.Equals(Model.ExistingPayment.Status, "Verified", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <div class="alert alert-success">
-                                <i class="fas fa-check-circle"></i> Your payment has been verified. Your request will proceed to the next stage.
-                            </div>
-                            <a href="/Dashboard/Student" class="btn btn-primary">Go to Dashboard</a>
-                        }
-                        else
-                        {
-                            <!-- Payment Upload Form -->
-                            <form method="post" enctype="multipart/form-data" id="paymentForm">
-                                <input type="hidden" asp-for="RequestId" />
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
 
-                                <h5 class="mb-3"><i class="fas fa-upload"></i> Upload Payment Proof</h5>
+        .request-details {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
 
-                                <!-- Payment Method -->
-                                <div class="mb-3">
-                                    <label for="paymentMethod" class="form-label fw-bold">
-                                        Payment Method <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select" id="paymentMethod" asp-for="PaymentMethod" required>
-                                        <option value="">-- Select Payment Method --</option>
-                                        <option value="Cash">Cash (Over the Counter)</option>
-                                        <option value="GCash">GCash</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
-                                        <option value="Over the Counter">Over the Counter</option>
-                                    </select>
-                                </div>
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
 
-                                <!-- Reference Number -->
-                                <div class="mb-3">
-                                    <label for="referenceNumber" class="form-label fw-bold">
-                                        Reference Number / OR Number <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="referenceNumber"
-                                           asp-for="ReferenceNumber" placeholder="Enter OR/Reference Number" required>
-                                    <small class="text-muted">
-                                        Enter the Official Receipt number or transaction reference number
-                                    </small>
-                                </div>
+            .detail-row:last-child {
+                border-bottom: none;
+            }
 
-                                <!-- Payment Proof Upload -->
-                                <div class="mb-3">
-                                    <label for="paymentProof" class="form-label fw-bold">
-                                        Upload Receipt/Proof 
-                                        @if (Model.ExistingPayment == null || string.Equals(Model.ExistingPayment?.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <span class="text-danger">*</span>
-                                        }
-                                    </label>
+        .detail-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
 
-                                    @* Render input with required only when necessary to avoid C# in attribute area *@
-                                    @if (Model.ExistingPayment == null || string.Equals(Model.ExistingPayment?.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <input type="file" class="form-control" id="paymentProof" asp-for="PaymentProofFile" accept="image/*,.pdf" required />
-                                    }
-                                    else
-                                    {
-                                        <input type="file" class="form-control" id="paymentProof" asp-for="PaymentProofFile" accept="image/*,.pdf" />
-                                    }
+        .detail-value {
+            color: #2d3748;
+        }
 
-                                    <small class="text-muted">
-                                        Accepted formats: JPG, PNG, PDF (Max 5MB)
-                                    </small>
+        .amount-highlight {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0d5c2f;
+            text-align: center;
+            padding: 20px;
+            background: #e6f7f0;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
 
-                                    <!-- Preview -->
-                                    <div id="imagePreview" class="mt-3" style="display: none;">
-                                        <img id="preview" src="#" alt="Preview" class="img-thumbnail" style="max-width: 300px;">
-                                    </div>
-                                </div>
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-                                <!-- Camera Capture Option (Mobile) -->
-                                <div class="mb-3">
-                                    <button type="button" class="btn btn-outline-primary" id="captureBtn">
-                                        <i class="fas fa-camera"></i> Take Photo (Mobile)
-                                    </button>
-                                </div>
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #2d3748;
+                font-size: 14px;
+            }
 
-                                <!-- Additional Notes -->
-                                <div class="mb-3">
-                                    <label for="notes" class="form-label fw-bold">
-                                        Additional Notes (Optional)
-                                    </label>
-                                    <textarea class="form-control" id="notes" asp-for="Notes"
-                                              rows="2" placeholder="Any additional information"></textarea>
-                                </div>
+        .form-control-custom {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
 
-                                <!-- Action Buttons -->
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
-                                        <i class="fas fa-check"></i> Submit Payment Proof
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#skipModal">
-                                        <i class="fas fa-clock"></i> I'll Upload Later
-                                    </button>
-                                </div>
-                            </form>
-                        }
-                    }
-                    else
-                    {
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle"></i> Request not found or already processed.
-                        </div>
-                        <a href="/Dashboard/Student" class="btn btn-primary">Go to Dashboard</a>
-                    }
-                </div>
+        .file-upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .file-upload-area:hover {
+                border-color: #0d5c2f;
+                background: #f7fafc;
+            }
+
+            .file-upload-area.drag-over {
+                border-color: #0d5c2f;
+                background: #e6f7f0;
+            }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #cbd5e0;
+            margin-bottom: 15px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .btn-submit:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(13,92,47,0.3);
+            }
+
+            .btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+        .payment-instructions {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+            .payment-instructions h4 {
+                color: #856404;
+                margin-bottom: 15px;
+                font-size: 16px;
+            }
+
+            .payment-instructions ul {
+                margin: 0;
+                padding-left: 20px;
+                color: #856404;
+            }
+
+            .payment-instructions li {
+                margin-bottom: 8px;
+            }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-verified {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="payment-card">
+            <div class="card-header">
+                <a href="/Dashboard/Student" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="card-title">Upload Payment Proof</h1>
             </div>
+
+            @if (Model.DocumentRequest != null)
+            {
+                <div class="request-details">
+                    <h3 style="margin-bottom: 15px; color: #2d3748;">Request Details</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Queue Number:</span>
+                        <span class="detail-value"><strong>@Model.DocumentRequest.QueueNumber</strong></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Document Type:</span>
+                        <span class="detail-value">@Model.DocumentRequest.DocumentType</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Quantity:</span>
+                        <span class="detail-value">@Model.DocumentRequest.Quantity copies</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-@Model.DocumentRequest.PaymentStatus.ToLower().Replace(" ", "")">
+                                @Model.DocumentRequest.PaymentStatus
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="amount-highlight">
+                    Total Amount: ₱@Model.DocumentRequest.TotalAmount.ToString("N2")
+                </div>
+
+                <div class="payment-instructions">
+                    <h4><i class="fas fa-info-circle"></i> Payment Instructions</h4>
+                    <ul>
+                        <li>Pay the exact amount to the Registrar's Office</li>
+                        <li>Get an official receipt or take a photo of your payment proof</li>
+                        <li>Upload a clear photo of your receipt below</li>
+                        <li>Wait for admin verification (usually within 1-2 business days)</li>
+                    </ul>
+                </div>
+
+                @if (Model.ExistingPayment != null)
+                {
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-check-circle"></i> Payment Already Uploaded</h5>
+                        <p>You uploaded payment on: <strong>@Model.ExistingPayment.PaymentDate.ToString("MMM dd, yyyy hh:mm tt")</strong></p>
+                        @if (!string.IsNullOrEmpty(Model.ExistingPayment.PaymentProofUrl))
+                        {
+                            <img src="@Model.ExistingPayment.PaymentProofUrl" class="preview-image" alt="Payment Proof">
+                        }
+                        <p style="margin-top: 15px;">Status: <strong>@Model.ExistingPayment.Status</strong></p>
+                        @if (Model.ExistingPayment.Status == "Rejected" && !string.IsNullOrEmpty(Model.ExistingPayment.RejectionReason))
+                        {
+                            <div class="alert alert-danger mt-3">
+                                <strong>Rejection Reason:</strong> @Model.ExistingPayment.RejectionReason
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (Model.ExistingPayment == null || Model.ExistingPayment.Status == "Rejected")
+                {
+                    <form id="paymentForm" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="requestId" value="@Model.DocumentRequest.RequestId" />
+
+                        <div class="form-group">
+                            <label>Payment Method <span style="color: #e53e3e;">*</span></label>
+                            <select class="form-control-custom" name="PaymentMethod" required>
+                                <option value="">Select payment method</option>
+                                <option value="Cash">Cash</option>
+                                <option value="GCash">GCash</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Reference Number (Optional)</label>
+                            <input type="text" class="form-control-custom" name="ReferenceNumber" placeholder="e.g., Transaction ID, Receipt #">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Upload Receipt/Proof of Payment <span style="color: #e53e3e;">*</span></label>
+                            <div class="file-upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <p><strong>Click to upload</strong> or drag and drop</p>
+                                <p style="font-size: 12px; color: #718096;">PNG, JPG, JPEG up to 5MB</p>
+                                <input type="file" name="ProofImage" id="fileInput" accept="image/*" style="display: none;" required>
+                            </div>
+                            <div id="preview"></div>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="submitBtn">
+                            <i class="fas fa-upload"></i> Submit Payment Proof
+                        </button>
+                    </form>
+                }
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <h4>Request not found</h4>
+                    <p>The document request you're looking for doesn't exist.</p>
+                    <a href="/Dashboard/Student" class="btn btn-primary">Go to Dashboard</a>
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
         </div>
     </div>
-</div>
 
-<!-- Skip Modal -->
-<div class="modal fade" id="skipModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Upload Payment Later</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>You can upload your payment proof later from your dashboard.</p>
-                <p class="text-warning">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Note:</strong> Your request will remain in "Pending Payment" status until payment is verified.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="/Dashboard/Student" class="btn btn-primary">Go to Dashboard</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
     <script>
-        $(document).ready(function() {
-            // Prefill selects if existing payment
-            var existingMethod = '@(Model.ExistingPayment?.PaymentMethod ?? string.Empty)';
-            if (existingMethod) {
-                $('#paymentMethod').val(existingMethod);
-            }
-            var existingRef = '@(Model.ExistingPayment?.ReferenceNumber ?? string.Empty)';
-            if (existingRef) {
-                $('#referenceNumber').val(existingRef);
-            }
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
 
-            // Image preview
-            $('#paymentProof').change(function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    // Check file size (5MB)
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('File size must be less than 5MB');
-                        $(this).val('');
-                        return;
-                    }
+        uploadArea?.addEventListener('click', () => fileInput?.click());
 
-                    // Show preview for images
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            $('#preview').attr('src', e.target.result);
-                            $('#imagePreview').show();
-                        }
-                        reader.readAsDataURL(file);
-                    } else {
-                        $('#imagePreview').hide();
-                    }
-                }
-            });
+        fileInput?.addEventListener('change', handleFileSelect);
 
-            // Camera capture (for mobile devices)
-            $('#captureBtn').click(function() {
-                $('#paymentProof').attr('capture', 'camera');
-                $('#paymentProof').click();
-            });
-
-            // Form submission validation
-            var requireFile = @(Model.ExistingPayment == null || string.Equals(Model.ExistingPayment?.Status, "Rejected", StringComparison.OrdinalIgnoreCase) ? true : false);
-            $('#paymentForm').submit(function(e) {
-                const fileInput = $('#paymentProof')[0];
-                if (requireFile) {
-                    if (!fileInput.files || !fileInput.files[0]) {
-                        e.preventDefault();
-                        alert('Please upload a payment proof image or receipt.');
-                        return false;
-                    }
-                }
-
-                $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
-            });
+        uploadArea?.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
         });
+
+        uploadArea?.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea?.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.innerHTML = `<img src="${e.target.result}" class="preview-image" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
     </script>
-}
-
-<style>
-    .card {
-        border-radius: 15px;
-    }
-
-    .card-header {
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-    }
-
-    .alert {
-        border-radius: 10px;
-    }
-
-    #imagePreview {
-        text-align: center;
-    }
-
-    #preview {
-        border-radius: 10px;
-    }
-</style>
+</body>
+</html>
