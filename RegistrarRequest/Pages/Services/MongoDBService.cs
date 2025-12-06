@@ -193,6 +193,14 @@ namespace ProjectCapstone.Services
             return result.ModifiedCount > 0;
         }
 
+        public async Task<bool> DeletePaymentAsync(int paymentId)
+        {
+            var filter = Builders<Payment>.Filter.Eq(p => p.PaymentId, paymentId);
+            var result = await _payments.DeleteOneAsync(filter);
+            return result.DeletedCount > 0;
+        }
+
+
         public async Task<bool> UpdateRequestStageAsync(int requestId, string currentStage, string paymentStatus)
         {
             var filter = Builders<DocumentRequest>.Filter.Eq(r => r.RequestId, requestId);
@@ -237,10 +245,23 @@ namespace ProjectCapstone.Services
                     CompletedDate = r.CompletedDate,
                     StudentName = user != null ? $"{user.FirstName} {user.LastName}" : "",
                     StudentNumber = user?.StudentNumber ?? "",
-                    StudentEmail = user?.Email ?? ""
+                    StudentEmail = user?.Email ?? "",
+                    TotalAmount = r.TotalAmount
                 };
             }).ToList();
         }
+
+        public async Task<List<Payment>> GetAllPaymentsAsync()
+        {
+            return await _payments.Find(_ => true).ToListAsync();
+        }
+
+        public async Task<Payment?> GetPaymentByIdAsync(int paymentId)
+        {
+            return await _payments.Find(p => p.PaymentId == paymentId).FirstOrDefaultAsync();
+        }
+
+
 
         // Add to MongoDBService.cs (after line 220)
 
@@ -301,4 +322,5 @@ public class RequestWithUser
     public string StudentName { get; set; } = string.Empty;
     public string StudentNumber { get; set; } = string.Empty;
     public string StudentEmail { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
 }

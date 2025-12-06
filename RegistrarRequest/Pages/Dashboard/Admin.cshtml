@@ -400,6 +400,27 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .btn-process {
+            background: #28a745;
+            color: white;
+        }
+
+            .btn-process:hover {
+                background: #218838;
+                color: white;
+            }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+            .btn-info:hover {
+                background: #138496;
+                color: white;
+            }
+
     </style>
 </head>
 <body>
@@ -516,90 +537,141 @@
         </div>
 
         <!-- ALL REQUESTS SECTION -->
-        <div id="requests-section" class="section-content active">
-            <h3 class="section-title">Document Requests</h3>
-            @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
-            {
-                foreach (var doc in Model.AllRequests)
-                {
-                    <div class="document-card">
-                        <div class="document-header">
-                            <div>
-                                <h4 class="document-title">@doc.DocumentType</h4>
-                                <span class="queue-badge"># @doc.QueueNumber</span>
-                            </div>
-                            <div>
-                                @if (doc.Status == "Pending")
-                                {
-                                    <span style="background: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⏳ PENDING</span>
-                                }
-                                else if (doc.Status == "Processing")
-                                {
-                                    <span style="background: #d1ecf1; color: #0c5460; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⚙️ PROCESSING</span>
-                                }
-                                else if (doc.Status == "Ready")
-                                {
-                                    <span style="background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">✅ READY</span>
-                                }
-                            </div>
-                        </div>
-                        <div class="document-info">
-                            <div class="info-item"><strong>Student:</strong> @doc.StudentName</div>
-                            <div class="info-item"><strong>Student #:</strong> @doc.StudentNumber</div>
-                            <div class="info-item"><strong>Purpose:</strong> @doc.Purpose</div>
-                            <div class="info-item"><strong>Copies:</strong> @doc.Quantity</div>
-                            <div class="info-item"><strong>Requested:</strong> @doc.RequestDate.ToString("yyyy-MM-dd")</div>
-                            <div class="info-item"><strong>Email:</strong> @doc.StudentEmail</div>
-                        </div>
-                        <div class="action-buttons">
-                            @if (doc.Status == "Pending")
+    <!-- ALL REQUESTS SECTION -->
+<div id="requests-section" class="section-content active">
+    <h3 class="section-title">Document Requests</h3>
+    @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
+    {
+        foreach (var doc in Model.AllRequests)
+        {
+            <div class="document-card">
+                <div class="document-header">
+                    <div>
+                        <h4 class="document-title">@doc.DocumentType</h4>
+                        <span class="queue-badge"># @doc.QueueNumber</span>
+
+                        @{
+                            var requiresPayment = doc.TotalAmount > 0;
+                            var payment = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
+                            var paymentVerified = payment != null && payment.Status == "Verified";
+                            var paymentPending = payment != null && payment.Status == "Pending Verification";
+                        }
+
+                        @if (requiresPayment)
+                        {
+                            @if (paymentVerified)
                             {
-                                <form method="post" asp-page-handler="UpdateStatus" style="display: inline;">
-                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
-                                    <input type="hidden" name="newStatus" value="Processing" />
-                                    <button type="submit" class="btn-action" style="background: #d1ecf1; color: #0c5460;">
-                                        <i class="fas fa-cog"></i> Start Processing
-                                    </button>
-                                </form>
+                                <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
+                                    <i class="fas fa-check-circle"></i> PAID
+                                </span>
                             }
-                            @if (doc.Status == "Processing")
+                            else if (paymentPending)
                             {
-                                <form method="post" asp-page-handler="MarkReady" style="display: inline;" onsubmit="return confirm('✅ Mark as READY for @doc.StudentName?\n\n📧 Email will be sent to: @doc.StudentEmail')">
-                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
-                                    <button type="submit" class="btn-action btn-complete">
-                                        <i class="fas fa-check"></i> Mark Ready & Send Email
-                                    </button>
-                                </form>
+                                <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
+                                    <i class="fas fa-clock"></i> PAYMENT PENDING
+                                </span>
                             }
-                            @if (doc.Status == "Ready")
+                            else
                             {
-                                <form method="post" asp-page-handler="MarkCompleted" style="display: inline;" onsubmit="return confirm('Mark as completed?')">
-                                    <input type="hidden" name="requestId" value="@doc.RequestId" />
-                                    <button type="submit" class="btn-action btn-complete">
-                                        <i class="fas fa-check-double"></i> Mark Completed
-                                    </button>
-                                </form>
+                                <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
+                                    <i class="fas fa-exclamation-circle"></i> UNPAID
+                                </span>
                             }
-                            <form method="post" asp-page-handler="UpdateStatus" style="display: inline;" onsubmit="return confirm('Cancel this request?')">
+                        }
+                    </div>
+                    <span class="status-badge status-@doc.Status.ToLower()">@doc.Status</span>
+                </div>
+
+                <div class="document-info">
+                    <div class="info-item"><strong>Student:</strong> @doc.StudentName</div>
+                    <div class="info-item"><strong>Student #:</strong> @doc.StudentNumber</div>
+                    <div class="info-item"><strong>Purpose:</strong> @doc.Purpose</div>
+                    <div class="info-item"><strong>Copies:</strong> @doc.Quantity</div>
+                    <div class="info-item"><strong>Requested:</strong> @doc.RequestDate.ToString("yyyy-MM-dd")</div>
+                    <div class="info-item"><strong>Email:</strong> @doc.StudentEmail</div>
+                </div>
+
+                <div class="action-buttons">
+                    @if (doc.Status == "Pending")
+                    {
+                        
+                            var requiresPaymentBtn = doc.TotalAmount > 0;
+                            var paymentBtn = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
+                            var paymentVerifiedBtn = paymentBtn != null && paymentBtn.Status == "Verified";
+                            var paymentPendingBtn = paymentBtn != null && paymentBtn.Status == "Pending Verification";
+                        
+
+                        @if (requiresPaymentBtn && !paymentVerifiedBtn)
+                        {
+                            @if (paymentPendingBtn)
+                            {
+                                <!-- Payment uploaded but not verified yet -->
+                                <a href="#" onclick="showSection(event, 'payments'); scrollToPayment(@doc.RequestId); return false;" 
+                                   class="btn-action" style="background: #f39c12; color: white;">
+                                    <i class="fas fa-credit-card"></i> Verify Payment
+                                </a>
+                            }
+                            else
+                            {
+                                <!-- Payment not uploaded yet -->
+                                <button type="button" class="btn-action" 
+                                        style="background: #cbd5e0; color: #718096; cursor: not-allowed;" 
+                                        disabled 
+                                        title="Student must upload payment first">
+                                    <i class="fas fa-clock"></i> Awaiting Payment
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <!-- Payment verified or not required - can start processing -->
+                            <form method="post" asp-page-handler="StartProcessing" style="display: inline;">
                                 <input type="hidden" name="requestId" value="@doc.RequestId" />
-                                <input type="hidden" name="newStatus" value="Cancelled" />
-                                <button type="submit" class="btn-action btn-reject">
-                                    <i class="fas fa-ban"></i> Reject
+                                <button type="submit" class="btn-action btn-process" style="background: #28a745; color: white;">
+                                    <i class="fas fa-play-circle"></i> Start Processing
                                 </button>
                             </form>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h4>No Pending Requests</h4>
-                    <p>All clear! No requests to process at the moment.</p>
+                        }
+                    }
+    
+                    <!-- Keep existing buttons for other statuses -->
+                    @if (doc.Status == "Processing")
+                    {
+                        <form method="post" asp-page-handler="MarkReady" style="display: inline;">
+                            <input type="hidden" name="requestId" value="@doc.RequestId" />
+                            <button type="submit" class="btn-action btn-complete">
+                                <i class="fas fa-check-circle"></i> Mark as Ready
+                            </button>
+                        </form>
+                    }
+    
+                    @if (doc.Status == "Ready")
+                    {
+                        <form method="post" asp-page-handler="CompleteRequest" style="display: inline;">
+                            <input type="hidden" name="requestId" value="@doc.RequestId" />
+                            <button type="submit" class="btn-action btn-complete">
+                                <i class="fas fa-flag-checkered"></i> Complete
+                            </button>
+                        </form>
+                    }
+    
+                    <button class="btn-action btn-view" onclick="showDetails(@doc.RequestId)">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
                 </div>
-            }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h4>No Pending Requests</h4>
+            <p>All clear! No requests to process at the moment.</p>
         </div>
+    }
+</div>
+
 
         <!-- PAYMENT VERIFICATION SECTION -->
         <div id="payments-section" class="section-content">
@@ -836,6 +908,25 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
             });
         }
+
+                // Scroll to specific payment in verification tab
+        function scrollToPayment(requestId) {
+            setTimeout(function() {
+                const paymentCards = document.querySelectorAll('#payments-section .document-card');
+                paymentCards.forEach(card => {
+                    const queueBadge = card.querySelector('.queue-badge');
+                    if (queueBadge) {
+                        // Find the payment card that matches this request
+                        card.style.border = '3px solid #f39c12';
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            card.style.border = '';
+                        }, 3000);
+                    }
+                });
+            }, 300);
+        }
+
     </script>
 </body>
 </html>

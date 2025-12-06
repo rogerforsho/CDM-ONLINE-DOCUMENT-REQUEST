@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using ProjectCapstone.Models;
 using ProjectCapstone.Services;
 
 namespace ProjectCapstone.Pages.Dashboard
@@ -19,6 +20,7 @@ namespace ProjectCapstone.Pages.Dashboard
         public List<DocumentRequest> AllRequests { get; set; }
         public List<DocumentRequest> HistoryRequests { get; set; }
         public List<ProjectCapstone.Models.DocumentType> DocumentTypes { get; set; }
+        public Dictionary<int, Payment?> RequestPayments { get; set; }
 
 
         public StudentModel(MongoDBService mongoDBService, ILogger<StudentModel> logger)
@@ -29,6 +31,7 @@ namespace ProjectCapstone.Pages.Dashboard
             AllRequests = new List<DocumentRequest>();
             HistoryRequests = new List<DocumentRequest>();
             DocumentTypes = new List<ProjectCapstone.Models.DocumentType>();
+            RequestPayments = new Dictionary<int, Payment?>();
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -48,6 +51,11 @@ namespace ProjectCapstone.Pages.Dashboard
                 await LoadRecentRequests(userId.Value);
                 await LoadAllRequests(userId.Value);
                 await LoadDocumentTypes();
+                foreach (var request in AllRequests)
+                {
+                    var payment = await _mongoDBService.GetPaymentByRequestIdAsync(request.RequestId);
+                    RequestPayments[request.RequestId] = payment;
+                }
             }
             catch (Exception ex)
             {

@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using ProjectCapstone.Services;
 using MongoDB.Driver;
+using ProjectCapstone.Models;
+using ProjectCapstone.Services;
 
 namespace ProjectCapstone.Pages.Dashboard
 {
@@ -22,6 +23,7 @@ namespace ProjectCapstone.Pages.Dashboard
         public List<AdminDocumentRequest> ReadyDocuments { get; set; }
         public List<AdminDocumentRequest> HistoryDocuments { get; set; }
         public Dictionary<string, int> DocumentTypeStats { get; set; }
+        public List<Payment> AllPayments { get; set; }
 
         // ADDED: Property for pending payments
         public List<PaymentVerificationItem> PendingPayments { get; set; }
@@ -44,6 +46,7 @@ namespace ProjectCapstone.Pages.Dashboard
             DocumentTypeStats = new Dictionary<string, int>();
             // ADDED: Initialize PendingPayments
             PendingPayments = new List<PaymentVerificationItem>();
+            AllPayments = new List<Payment>();
         }
 
         public string GetDocumentTypesJson()
@@ -82,6 +85,7 @@ namespace ProjectCapstone.Pages.Dashboard
                 await LoadHistoryDocuments();
                 // ADDED: Load pending payments
                 await LoadPendingPayments();
+                await LoadAllPayments();
             }
             catch (Exception ex)
             {
@@ -89,6 +93,10 @@ namespace ProjectCapstone.Pages.Dashboard
             }
 
             return Page();
+        }
+        private async Task LoadAllPayments()
+        {
+            AllPayments = await _mongoDBService.GetAllPaymentsAsync();
         }
 
         public async Task<IActionResult> OnPostMarkReadyAsync(int requestId)
@@ -266,7 +274,8 @@ namespace ProjectCapstone.Pages.Dashboard
                     Status = r.Status,
                     StudentName = r.StudentName,
                     StudentNumber = r.StudentNumber,
-                    StudentEmail = r.StudentEmail
+                    StudentEmail = r.StudentEmail,
+                    TotalAmount = r.TotalAmount
                 }).ToList();
 
             PendingDocuments = AllRequests.Where(r => r.Status == "Pending" || r.Status == "Processing").ToList();
@@ -294,7 +303,8 @@ namespace ProjectCapstone.Pages.Dashboard
                     Status = r.Status,
                     StudentName = r.StudentName,
                     StudentNumber = r.StudentNumber,
-                    StudentEmail = r.StudentEmail
+                    StudentEmail = r.StudentEmail,
+                    TotalAmount = r.TotalAmount
                 }).ToList();
         }
 
@@ -353,15 +363,41 @@ namespace ProjectCapstone.Pages.Dashboard
                 var userId = HttpContext.Session.GetInt32("UserId");
                 if (userId == null) return RedirectToPage("/Login");
 
+                // Get request and user details
+                var request = await _mongoDBService.GetRequestByIdAsync(requestId);
+                var user = request != null ? await _mongoDBService.GetUserByIdAsync(request.UserId) : null;
+
                 // Verify payment
                 await _mongoDBService.VerifyPaymentAsync(paymentId, "Verified");
 
-                // Update request to Processing
-                await _mongoDBService.UpdateRequestStatusAsync(requestId, "Processing", userId.Value);
-                await _mongoDBService.UpdateRequestStageAsync(requestId, "Document Processing", "Verified");
+                // Update request payment status (keep status as Pending, don't move to Processing yet)
+                // Admin will manually click "Start Processing" after payment verification
 
-                SuccessMessage = "✅ Payment verified! Request moved to Processing.";
-                _logger.LogInformation($"Payment {paymentId} verified by admin {userId}");
+                // Send email notification
+                if (request != null && user != null)
+                {
+                    try
+                    {
+                        await _emailService.SendPaymentVerificationEmailAsync(
+                            user.Email,
+                            $"{user.FirstName} {user.LastName}",
+                            request.QueueNumber,
+                            approved: true
+                        );
+
+                        SuccessMessage = $"✅ Payment verified! Email sent to {user.FirstName} {user.LastName}. You can now start processing the request.";
+                        _logger.LogInformation($"Payment {paymentId} verified by admin {userId}");
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogError($"Error sending approval email: {emailEx.Message}");
+                        SuccessMessage = "✅ Payment verified! (Email notification failed)";
+                    }
+                }
+                else
+                {
+                    SuccessMessage = "✅ Payment verified! You can now start processing the request.";
+                }
 
                 return RedirectToPage();
             }
@@ -373,18 +409,59 @@ namespace ProjectCapstone.Pages.Dashboard
             }
         }
 
+
         // ADDED: Reject payment handler
         public async Task<IActionResult> OnPostRejectPaymentAsync(int paymentId, string rejectionReason)
         {
             try
             {
                 var userId = HttpContext.Session.GetInt32("UserId");
-                if (userId == null) return RedirectToPage();
+                if (userId == null) return RedirectToPage("/Login");
 
+                // Get payment and request details
+                var payment = await _mongoDBService.GetPaymentByIdAsync(paymentId);
+                if (payment == null)
+                {
+                    ErrorMessage = "Payment not found";
+                    return RedirectToPage();
+                }
+
+                var request = await _mongoDBService.GetRequestByIdAsync(payment.RequestId);
+                if (request == null)
+                {
+                    ErrorMessage = "Request not found";
+                    return RedirectToPage();
+                }
+
+                var user = await _mongoDBService.GetUserByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    ErrorMessage = "User not found";
+                    return RedirectToPage();
+                }
+
+                // Reject payment
                 await _mongoDBService.VerifyPaymentAsync(paymentId, "Rejected", rejectionReason);
 
-                SuccessMessage = "❌ Payment rejected. Student will be notified to re-upload.";
-                _logger.LogInformation($"Payment {paymentId} rejected by admin {userId}");
+                // Send email notification
+                try
+                {
+                    await _emailService.SendPaymentVerificationEmailAsync(
+                        user.Email,
+                        $"{user.FirstName} {user.LastName}",
+                        request.QueueNumber,
+                        approved: false,
+                        reason: rejectionReason
+                    );
+
+                    SuccessMessage = $"❌ Payment rejected and email sent to {user.FirstName} {user.LastName}!";
+                    _logger.LogInformation($"Payment {paymentId} rejected and email sent to {user.Email}");
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError($"Error sending rejection email: {emailEx.Message}");
+                    SuccessMessage = "❌ Payment rejected (email notification failed)";
+                }
 
                 return RedirectToPage();
             }
@@ -395,6 +472,101 @@ namespace ProjectCapstone.Pages.Dashboard
                 return RedirectToPage();
             }
         }
+
+        // ADD THIS METHOD:
+        public async Task<IActionResult> OnPostStartProcessingAsync(int requestId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return RedirectToPage("/Login");
+                }
+
+                // Get request details
+                var request = await _mongoDBService.GetRequestByIdAsync(requestId);
+                if (request == null)
+                {
+                    ErrorMessage = "Request not found";
+                    return RedirectToPage();
+                }
+
+                // Update status to Processing
+                await _mongoDBService.UpdateRequestStatusAsync(requestId, "Processing", userId.Value);
+
+                SuccessMessage = $"✅ Request #{request.QueueNumber} moved to Processing!";
+                _logger.LogInformation($"Request {requestId} status updated to Processing by admin {userId}");
+
+                return RedirectToPage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error starting processing: {ex.Message}");
+                ErrorMessage = $"❌ Error: {ex.Message}";
+                return RedirectToPage();
+            }
+        }
+
+
+        // ADD THIS METHOD TOO:
+        public async Task<IActionResult> OnPostCompleteRequestAsync(int requestId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                {
+                    return RedirectToPage("/Login");
+                }
+
+                // Get request and user details
+                var request = await _mongoDBService.GetRequestByIdAsync(requestId);
+                if (request == null)
+                {
+                    ErrorMessage = "Request not found";
+                    return RedirectToPage();
+                }
+
+                var user = await _mongoDBService.GetUserByIdAsync(request.UserId);
+
+                // Update status to Completed
+                await _mongoDBService.UpdateRequestStatusAsync(requestId, "Completed", userId.Value, DateTime.UtcNow);
+
+                SuccessMessage = $"✅ Request #{request.QueueNumber} marked as Completed!";
+                _logger.LogInformation($"Request {requestId} completed by admin {userId}");
+
+                // Optional: Send completion email
+                if (user != null)
+                {
+                    try
+                    {
+                        await _emailService.SendDocumentReadyEmailAsync(
+                            user.Email,
+                            $"{user.FirstName} {user.LastName}",
+                            request.DocumentType,
+                            request.QueueNumber
+                        );
+                        _logger.LogInformation($"Completion email sent to {user.Email}");
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogError($"Error sending completion email: {emailEx.Message}");
+                    }
+                }
+
+                return RedirectToPage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error completing request: {ex.Message}");
+                ErrorMessage = $"❌ Error: {ex.Message}";
+                return RedirectToPage();
+            }
+        }
+
+
+
     }
 
     public class AdminDocumentRequest
@@ -410,6 +582,7 @@ namespace ProjectCapstone.Pages.Dashboard
         public string StudentName { get; set; } = string.Empty;
         public string StudentNumber { get; set; } = string.Empty;
         public string StudentEmail { get; set; } = string.Empty;
+        public decimal TotalAmount { get; set; }
     }
 
     // ADDED: Payment verification helper class

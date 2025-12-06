@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using ProjectCapstone.Models;
@@ -23,24 +23,34 @@ namespace ProjectCapstone.Pages.DocumentRequest
             _logger = logger;
         }
 
-        public async Task<IActionResult> OnGetAsync(int requestId)
+        public async Task OnGetAsync(int requestId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
             {
-                return RedirectToPage("/Login");
+                Response.Redirect("/Login");
+                return;
             }
 
             DocumentRequest = await _mongoDBService.GetRequestByIdAsync(requestId);
-            if (DocumentRequest == null || DocumentRequest.UserId != userId.Value)
+
+            if (DocumentRequest == null || DocumentRequest.UserId != userId)
             {
-                return RedirectToPage("/Dashboard/Student");
+                Response.Redirect("/Dashboard/Student");
+                return;
             }
 
+            // Get existing payment
             ExistingPayment = await _mongoDBService.GetPaymentByRequestIdAsync(requestId);
 
-            return Page();
+            // If payment was rejected, allow re-upload by treating it as if no payment exists
+            if (ExistingPayment != null && ExistingPayment.Status == "Rejected")
+            {
+                // Keep the rejected payment info to show rejection reason
+                // But allow the form to be displayed for re-upload
+            }
         }
+
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -50,8 +60,29 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 return RedirectToPage("/Login");
             }
 
-            // Get values directly from Request object
-            int requestId = int.Parse(Request.Form["requestId"]);
+            // --- START OF ADDED/MODIFIED LOGIC ---
+
+            // Get requestId early to check for rejected payment
+            // We assume requestId will be present and valid from the form submission.
+            if (!int.TryParse(Request.Form["requestId"], out int requestId))
+            {
+                TempData["ErrorMessage"] = "Invalid request ID provided.";
+                return Page();
+            }
+
+            // ✅ Check for existing rejected payment and delete it
+            var existingPayment = await _mongoDBService.GetPaymentByRequestIdAsync(requestId);
+            if (existingPayment != null && existingPayment.Status == "Rejected")
+            {
+                // Delete the rejected payment before creating a new one
+                await _mongoDBService.DeletePaymentAsync(existingPayment.PaymentId);
+                _logger.LogInformation($"Deleted rejected payment {existingPayment.PaymentId} for re-upload for request {requestId}");
+            }
+
+            // --- END OF ADDED/MODIFIED LOGIC ---
+
+            // Get values directly from Request object (requestId is already parsed above, but we'll use the one from form for consistency in the original logic structure)
+            // int requestId = int.Parse(Request.Form["requestId"]); // Original line, now handled above with TryParse
             string paymentMethod = Request.Form["PaymentMethod"];
             string? referenceNumber = Request.Form["ReferenceNumber"];
             IFormFile? proofImage = Request.Form.Files["ProofImage"];
@@ -70,6 +101,7 @@ namespace ProjectCapstone.Pages.DocumentRequest
                 if (proofImage == null || proofImage.Length == 0)
                 {
                     TempData["ErrorMessage"] = "Please upload a payment proof image.";
+                    // Since DocumentRequest is loaded, the Page() return will still display necessary request info
                     return Page();
                 }
 
@@ -109,6 +141,8 @@ namespace ProjectCapstone.Pages.DocumentRequest
             {
                 _logger.LogError($"Error uploading payment: {ex.Message}\n{ex.StackTrace}");
                 TempData["ErrorMessage"] = $"Failed to upload payment: {ex.Message}";
+                // Ensure DocumentRequest is not null if we return Page() on error
+                // It was loaded earlier, so it should be fine.
                 return Page();
             }
         }
