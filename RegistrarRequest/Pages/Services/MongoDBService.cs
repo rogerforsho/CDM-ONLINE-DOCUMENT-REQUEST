@@ -242,6 +242,34 @@ namespace ProjectCapstone.Services
             }).ToList();
         }
 
+        // Add to MongoDBService.cs (after line 220)
+
+        public async Task<List<Payment>> GetPendingPaymentsAsync()
+        {
+            return await _payments.Find(p => p.Status == "Pending Verification")
+                .SortBy(p => p.PaymentDate)
+                .ToListAsync();
+        }
+
+        public async Task<bool> VerifyPaymentAsync(int paymentId, string status, string rejectionReason = "")
+        {
+            var filter = Builders<Payment>.Filter.Eq(p => p.PaymentId, paymentId);
+
+            var update = Builders<Payment>.Update
+                .Set(p => p.Status, status)
+                .Set(p => p.VerifiedDate, DateTime.UtcNow);
+
+
+            if (!string.IsNullOrEmpty(rejectionReason))
+            {
+                update = update.Set(p => p.RejectionReason, rejectionReason);
+            }
+
+            var result = await _payments.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
+        }
+
+
         public async Task<bool> UpdateRequestStatusAsync(int requestId, string status, int processedBy, DateTime? completedDate = null)
         {
             var filter = Builders<DocumentRequest>.Filter.Eq(r => r.RequestId, requestId);

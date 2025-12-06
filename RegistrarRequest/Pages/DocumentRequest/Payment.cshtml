@@ -229,6 +229,188 @@
             background: #f8d7da;
             color: #721c24;
         }
+
+        /* QR Code Section Styles */
+        .qr-code-section {
+            background: linear-gradient(135deg, #e6f7f0 0%, #d4edda 100%);
+            border: 2px solid #0d5c2f;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            display: none;
+        }
+
+            .qr-code-section.show {
+                display: block;
+                animation: slideDown 0.3s ease-out;
+            }
+
+        keyframes slideDown {
+            from{
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+
+        .qr-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+            .qr-header h4 {
+                color: #0d5c2f;
+                font-size: 20px;
+                font-weight: 700;
+                margin-bottom: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+        .gcash-icon {
+            width: 30px;
+            height: 30px;
+            background: #007dfe;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .qr-header p {
+            color: #2d5a47;
+            font-size: 14px;
+        }
+
+        .qr-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        .qr-image-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .qr-image {
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            border-radius: 8px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .qr-details {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+            .qr-details h5 {
+                color: #0d5c2f;
+                font-size: 16px;
+                font-weight: 700;
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+        .detail-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+            .detail-item:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+
+        .copy-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #4a5568;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .copy-btn:hover {
+                background: #cbd5e0;
+                color: #2d3748;
+            }
+
+            .copy-btn.copied {
+                background: #d4edda;
+                color: #155724;
+            }
+
+        .qr-instructions {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #f39c12;
+        }
+
+            .qr-instructions h5 {
+                color: #856404;
+                font-size: 14px;
+                font-weight: 700;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .qr-instructions ol {
+                margin: 0;
+                padding-left: 20px;
+                color: #856404;
+            }
+
+            .qr-instructions li {
+                margin-bottom: 8px;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+        media (max-width: 768px) {
+            .qr-content
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        .qr-image-container {
+            order: -1;
+        }
+
+        }
     </style>
 </head>
 <body>
@@ -315,6 +497,72 @@
                             </select>
                         </div>
 
+                        <!-- QR CODE SECTION FOR GCASH -->
+                        <div class="qr-code-section" id="qrSection">
+                            <div class="qr-header">
+                                <h4>
+                                    <span class="gcash-icon">G</span>
+                                    Scan QR Code to Pay
+                                </h4>
+                                <p>Use your GCash app to scan the QR code below</p>
+                            </div>
+
+                            <div class="qr-content">
+                                <div class="qr-image-container">
+                                    <img src="/images/gcash-qr-code.png" alt="GCash QR Code" class="qr-image"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div style="display:none; width:250px; height:250px; border:3px dashed #cbd5e0; border-radius:10px; margin:0 auto; align-items:center; justify-content:center; flex-direction:column; color:#718096;">
+                                        <i class="fas fa-qrcode" style="font-size:48px; margin-bottom:10px; color:#cbd5e0;"></i>
+                                        <p style="font-size:13px; margin:5px 0;"><strong>QR Code Here</strong></p>
+                                        <p style="font-size:12px; margin:0;">Place image at: /wwwroot/images/gcash-qr-code.png</p>
+                                    </div>
+                                </div>
+
+                                <div class="qr-details">
+                                    <h5><i class="fas fa-user-circle"></i> Account Details</h5>
+
+                                    <div class="detail-item">
+                                        <div class="detail-label">Account Name</div>
+                                        <div class="detail-value">
+                                            <span id="accountName">Colegio de Montalban</span>
+                                            <button type="button" class="copy-btn" onclick="copyToClipboard('accountName', this)">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <div class="detail-label">GCash Number</div>
+                                        <div class="detail-value">
+                                            <span id="gcashNumber">0912-345-6789</span>
+                                            <button type="button" class="copy-btn" onclick="copyToClipboard('gcashNumber', this)">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="detail-item">
+                                        <div class="detail-label">Amount to Pay</div>
+                                        <div class="detail-value">
+                                            <span style="color: #0d5c2f; font-size: 18px;">₱@Model.DocumentRequest.TotalAmount.ToString("N2")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="qr-instructions">
+                                <h5><i class="fas fa-lightbulb"></i> Payment Steps</h5>
+                                <ol>
+                                    <li>Open your <strong>GCash app</strong></li>
+                                    <li>Tap <strong>"Scan QR"</strong> on the home screen</li>
+                                    <li>Point your camera at the QR code above</li>
+                                    <li>Verify the amount (₱@Model.DocumentRequest.TotalAmount.ToString("N2")) and recipient name</li>
+                                    <li>Confirm the payment and <strong>take a screenshot</strong> of the receipt</li>
+                                    <li>Upload the screenshot below as proof of payment</li>
+                                </ol>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label>Reference Number (Optional)</label>
                             <input type="text" class="form-control-custom" name="ReferenceNumber" placeholder="e.g., Transaction ID, Receipt #">
@@ -393,6 +641,39 @@
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        // Show/hide QR code section based on payment method
+        const paymentMethodSelect = document.querySelector('select[name="PaymentMethod"]');
+        const qrSection = document.getElementById('qrSection');
+
+        if (paymentMethodSelect && qrSection) {
+            paymentMethodSelect.addEventListener('change', function () {
+                if (this.value === 'GCash') {
+                    qrSection.classList.add('show');
+                } else {
+                    qrSection.classList.remove('show');
+                }
+            });
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(elementId, button) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = button.innerHTML;
+
+                button.classList.add('copied');
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy text');
+            });
         }
     </script>
 </body>

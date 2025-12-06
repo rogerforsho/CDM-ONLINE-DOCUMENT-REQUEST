@@ -68,7 +68,7 @@ namespace ProjectCapstone.Controllers
                     PaymentStatus = paymentStatus, // ADDED
                     CurrentStage = currentStage, // ADDED
                     RequestDate = DateTime.UtcNow,
-                    Status = "Active", // CHANGED from "Pending" to "Active"
+                    Status = "Pending", // CHANGED from "Pending" to "Active"
                     QueueNumber = queueNumber,
                     Notes = SecurityHelper.SanitizeInput(request.Notes ?? string.Empty)
                 };

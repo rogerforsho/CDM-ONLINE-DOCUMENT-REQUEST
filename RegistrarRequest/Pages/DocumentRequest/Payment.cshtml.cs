@@ -87,7 +87,8 @@ namespace ProjectCapstone.Pages.DocumentRequest
                     ReferenceNumber = string.IsNullOrEmpty(referenceNumber) ? null : referenceNumber,
                     PaymentProofUrl = imagePath,
                     PaymentDate = DateTime.UtcNow,
-                    Status = "Pending"
+                    Status = "Pending Verification"
+
                 };
 
                 await _mongoDBService.CreatePaymentAsync(payment);

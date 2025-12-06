@@ -438,6 +438,16 @@
                     <i class="fas fa-history"></i> History
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection(event, 'payments'); return false;">
+                    <i class="fas fa-credit-card"></i> Payment Verification
+                    @if (Model.PendingPayments != null && Model.PendingPayments.Count > 0)
+                    {
+                        <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">@Model.PendingPayments.Count</span>
+                    }
+                </a>
+            </li>
+
         </ul>
 
         <div class="logout-btn">
@@ -590,6 +600,109 @@
                 </div>
             }
         </div>
+
+        <!-- PAYMENT VERIFICATION SECTION -->
+        <div id="payments-section" class="section-content">
+            <h3 class="section-title"><i class="fas fa-credit-card"></i> Payment Verification</h3>
+
+            @if (Model.PendingPayments != null && Model.PendingPayments.Count > 0)
+            {
+                foreach (var payment in Model.PendingPayments)
+                {
+                    <div class="document-card" style="border-left-color: #f39c12;">
+                        <div class="document-header">
+                            <div>
+                                <h4 class="document-title">💳 Payment Verification Required</h4>
+                                <span class="queue-badge"># @payment.QueueNumber</span>
+                            </div>
+                            <span style="background: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                ⏳ AWAITING VERIFICATION
+                            </span>
+                        </div>
+
+                        <div class="document-info">
+                            <div class="info-item"><strong>Student:</strong> @payment.StudentName</div>
+                            <div class="info-item"><strong>Student #:</strong> @payment.StudentNumber</div>
+                            <div class="info-item"><strong>Document:</strong> @payment.DocumentType</div>
+                            <div class="info-item"><strong>Amount:</strong> ₱@payment.Amount.ToString("N2")</div>
+                            <div class="info-item"><strong>Payment Method:</strong> @payment.PaymentMethod</div>
+                            <div class="info-item"><strong>Reference:</strong> @(string.IsNullOrEmpty(payment.ReferenceNumber) ? "N/A" : payment.ReferenceNumber)</div>
+                            <div class="info-item"><strong>Uploaded:</strong> @payment.PaymentDate.ToString("MMM dd, yyyy hh:mm tt")</div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(payment.PaymentProofUrl))
+                        {
+                            <div style="margin: 20px 0; text-align: center;">
+                                <strong style="display: block; margin-bottom: 10px; color: #2d3748;">Payment Proof:</strong>
+                                <img src="@payment.PaymentProofUrl" alt="Payment Proof"
+                                     style="max-width: 100%; max-height: 400px; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer;"
+                                     onclick="window.open(this.src, '_blank')">
+                                <p style="font-size: 12px; color: #718096; margin-top: 5px;">Click image to view full size</p>
+                            </div>
+                        }
+
+                        <div class="action-buttons">
+                            <form method="post" asp-page-handler="ApprovePayment" style="display: inline;"
+                                  onsubmit="return confirm('✅ APPROVE this payment?\n\nStudent: @payment.StudentName\nAmount: ₱@payment.Amount\n\nRequest will move to PROCESSING.')">
+                                <input type="hidden" name="paymentId" value="@payment.PaymentId" />
+                                <input type="hidden" name="requestId" value="@payment.RequestId" />
+                                <button type="submit" class="btn-action btn-complete">
+                                    <i class="fas fa-check-circle"></i> Approve Payment
+                                </button>
+                            </form>
+
+                            <button type="button" class="btn-action btn-reject" onclick="showRejectModal(@payment.PaymentId)">
+                                <i class="fas fa-times-circle"></i> Reject Payment
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <h4>All Caught Up!</h4>
+                    <p>No payments awaiting verification at the moment.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Reject Payment Modal -->
+        <div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                <h3 style="margin-bottom: 20px; color: #2d3748;">Reject Payment</h3>
+                <form method="post" asp-page-handler="RejectPayment" id="rejectForm">
+                    <input type="hidden" name="paymentId" id="rejectPaymentId" />
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #2d3748;">Reason for Rejection:</label>
+                        <textarea name="rejectionReason" required
+                                  style="width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 8px; min-height: 100px; font-family: inherit;"
+                                  placeholder="e.g., Image is unclear, wrong amount, invalid receipt..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-action btn-reject" style="flex: 1;">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        <button type="button" class="btn-action" style="flex: 1; background: #e2e8f0; color: #4a5568;" onclick="hideRejectModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function showRejectModal(paymentId) {
+                document.getElementById('rejectPaymentId').value = paymentId;
+                document.getElementById('rejectModal').style.display = 'flex';
+            }
+
+            function hideRejectModal() {
+                document.getElementById('rejectModal').style.display = 'none';
+            }
+        </script>
+
 
         <!-- ANALYTICS SECTION -->
         <div id="analytics-section" class="section-content">

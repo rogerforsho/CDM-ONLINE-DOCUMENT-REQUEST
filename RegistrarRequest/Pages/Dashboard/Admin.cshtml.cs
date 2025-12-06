@@ -23,6 +23,9 @@ namespace ProjectCapstone.Pages.Dashboard
         public List<AdminDocumentRequest> HistoryDocuments { get; set; }
         public Dictionary<string, int> DocumentTypeStats { get; set; }
 
+        // ADDED: Property for pending payments
+        public List<PaymentVerificationItem> PendingPayments { get; set; }
+
         [TempData]
         public string SuccessMessage { get; set; } = string.Empty;
 
@@ -39,6 +42,8 @@ namespace ProjectCapstone.Pages.Dashboard
             ReadyDocuments = new List<AdminDocumentRequest>();
             HistoryDocuments = new List<AdminDocumentRequest>();
             DocumentTypeStats = new Dictionary<string, int>();
+            // ADDED: Initialize PendingPayments
+            PendingPayments = new List<PaymentVerificationItem>();
         }
 
         public string GetDocumentTypesJson()
@@ -75,6 +80,8 @@ namespace ProjectCapstone.Pages.Dashboard
                 await LoadStatistics();
                 await LoadAllRequests();
                 await LoadHistoryDocuments();
+                // ADDED: Load pending payments
+                await LoadPendingPayments();
             }
             catch (Exception ex)
             {
@@ -305,6 +312,89 @@ namespace ProjectCapstone.Pages.Dashboard
                 DocumentTypeStats[stat.Type] = stat.Count;
             }
         }
+
+        // ADDED: Load pending payments method
+        private async Task LoadPendingPayments()
+        {
+            var payments = await _mongoDBService.GetPendingPaymentsAsync();
+
+            PendingPayments = new List<PaymentVerificationItem>();
+
+            foreach (var payment in payments)
+            {
+                var request = await _mongoDBService.GetRequestByIdAsync(payment.RequestId);
+                var user = request != null ? await _mongoDBService.GetUserByIdAsync(request.UserId) : null;
+
+                if (request != null && user != null)
+                {
+                    PendingPayments.Add(new PaymentVerificationItem
+                    {
+                        PaymentId = payment.PaymentId,
+                        RequestId = payment.RequestId,
+                        QueueNumber = request.QueueNumber,
+                        StudentName = $"{user.FirstName} {user.LastName}",
+                        StudentNumber = user.StudentNumber,
+                        DocumentType = request.DocumentType,
+                        Amount = request.TotalAmount,
+                        PaymentMethod = payment.PaymentMethod,
+                        ReferenceNumber = payment.ReferenceNumber,
+                        PaymentProofUrl = payment.PaymentProofUrl,
+                        PaymentDate = payment.PaymentDate
+                    });
+                }
+            }
+        }
+
+        // ADDED: Approve payment handler
+        public async Task<IActionResult> OnPostApprovePaymentAsync(int paymentId, int requestId)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null) return RedirectToPage("/Login");
+
+                // Verify payment
+                await _mongoDBService.VerifyPaymentAsync(paymentId, "Verified");
+
+                // Update request to Processing
+                await _mongoDBService.UpdateRequestStatusAsync(requestId, "Processing", userId.Value);
+                await _mongoDBService.UpdateRequestStageAsync(requestId, "Document Processing", "Verified");
+
+                SuccessMessage = "✅ Payment verified! Request moved to Processing.";
+                _logger.LogInformation($"Payment {paymentId} verified by admin {userId}");
+
+                return RedirectToPage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error verifying payment: {ex.Message}");
+                ErrorMessage = $"❌ Error: {ex.Message}";
+                return RedirectToPage();
+            }
+        }
+
+        // ADDED: Reject payment handler
+        public async Task<IActionResult> OnPostRejectPaymentAsync(int paymentId, string rejectionReason)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null) return RedirectToPage();
+
+                await _mongoDBService.VerifyPaymentAsync(paymentId, "Rejected", rejectionReason);
+
+                SuccessMessage = "❌ Payment rejected. Student will be notified to re-upload.";
+                _logger.LogInformation($"Payment {paymentId} rejected by admin {userId}");
+
+                return RedirectToPage();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error rejecting payment: {ex.Message}");
+                ErrorMessage = $"❌ Error: {ex.Message}";
+                return RedirectToPage();
+            }
+        }
     }
 
     public class AdminDocumentRequest
@@ -320,5 +410,21 @@ namespace ProjectCapstone.Pages.Dashboard
         public string StudentName { get; set; } = string.Empty;
         public string StudentNumber { get; set; } = string.Empty;
         public string StudentEmail { get; set; } = string.Empty;
+    }
+
+    // ADDED: Payment verification helper class
+    public class PaymentVerificationItem
+    {
+        public int PaymentId { get; set; }
+        public int RequestId { get; set; }
+        public string QueueNumber { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentNumber { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string ReferenceNumber { get; set; } = string.Empty;
+        public string PaymentProofUrl { get; set; } = string.Empty;
+        public DateTime PaymentDate { get; set; }
     }
 }
