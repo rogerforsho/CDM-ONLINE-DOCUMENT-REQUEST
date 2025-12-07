@@ -11,6 +11,8 @@ namespace ProjectCapstone.Pages.Dashboard
         private readonly MongoDBService _mongoDBService;
         private readonly ILogger<AdminModel> _logger;
         private readonly IEmailService _emailService;
+        private const string ADMIN_PIN = "1234";  // ← Change to your PIN
+
 
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -73,6 +75,11 @@ namespace ProjectCapstone.Pages.Dashboard
             if (role != "Admin" && role != "Staff")
             {
                 return RedirectToPage("/Dashboard/Student");
+            }
+            var pinVerified = HttpContext.Session.GetString("PinVerified");
+            if (pinVerified != "true")
+            {
+                return RedirectToPage("/AdminPin");
             }
 
             FullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
