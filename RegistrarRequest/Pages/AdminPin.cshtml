@@ -1,3 +1,332 @@
-﻿@{
-    Layout = "_Layout";
+﻿@page
+@model ProjectCapstone.Pages.AdminPinModel
+@{
+    Layout = null;
 }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin PIN Verification - CDM</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .pin-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-circle {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(13, 92, 47, 0.3);
+        }
+
+            .logo-circle i {
+                font-size: 50px;
+                color: white;
+            }
+
+        .pin-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .pin-subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .admin-name {
+            color: #0d5c2f;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .pin-instruction {
+            text-align: center;
+            color: #4a5568;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid #dc3545;
+            animation: shake 0.5s;
+        }
+
+        @@keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            10%, 30%, 50%, 70%, 90% {
+                transform: translateX(-5px);
+            }
+
+            20%, 40%, 60%, 80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .pin-inputs {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .pin-input {
+            width: 70px;
+            height: 70px;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            transition: all 0.3s;
+            color: #2d3748;
+        }
+
+            .pin-input:focus {
+                outline: none;
+                border-color: #0d5c2f;
+                box-shadow: 0 0 0 3px rgba(13, 92, 47, 0.1);
+                transform: scale(1.05);
+            }
+
+            .pin-input::-webkit-outer-spin-button,
+            .pin-input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+        .attempts-warning {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 12px;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .verify-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(13, 92, 47, 0.3);
+        }
+
+            .verify-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(13, 92, 47, 0.4);
+            }
+
+            .verify-button:active {
+                transform: translateY(0);
+            }
+
+        .logout-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .logout-link a {
+                color: #718096;
+                text-decoration: none;
+                font-size: 14px;
+                transition: color 0.3s;
+            }
+
+                .logout-link a:hover {
+                    color: #2d3748;
+                }
+
+        .system-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #a0aec0;
+            font-size: 12px;
+        }
+
+        @@media (max-width: 576px) {
+            .pin-container {
+                padding: 30px 20px;
+            }
+
+            .pin-inputs {
+                gap: 10px;
+            }
+
+            .pin-input {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+
+            .pin-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pin-container">
+        <div class="logo-section">
+            <div class="logo-circle">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h1 class="pin-title">Admin PIN Verification</h1>
+            <p class="pin-subtitle">Welcome,</p>
+            <div class="admin-name">@Model.AdminName</div>
+        </div>
+
+        <p class="pin-instruction">
+            Please enter your 4-digit PIN to continue
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
+
+        <form method="post">
+            <div class="pin-inputs">
+                <input type="number" name="pin1" maxlength="1" class="pin-input"
+                       pattern="[0-9]" required autofocus
+                       oninput="this.value=this.value.slice(0,1)" />
+                <input type="number" name="pin2" maxlength="1" class="pin-input"
+                       pattern="[0-9]" required
+                       oninput="this.value=this.value.slice(0,1)" />
+                <input type="number" name="pin3" maxlength="1" class="pin-input"
+                       pattern="[0-9]" required
+                       oninput="this.value=this.value.slice(0,1)" />
+                <input type="number" name="pin4" maxlength="1" class="pin-input"
+                       pattern="[0-9]" required
+                       oninput="this.value=this.value.slice(0,1)" />
+            </div>
+
+            <div class="attempts-warning">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Attempts remaining: <strong>@Model.AttemptsRemaining</strong></span>
+            </div>
+
+            <button type="submit" class="verify-button">
+                <i class="fas fa-shield-alt"></i> Verify PIN
+            </button>
+        </form>
+
+        <div class="logout-link">
+            <a href="/Logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+
+        <div class="system-footer">
+            <i class="fas fa-building"></i> Colegio de Montalban<br>
+            Online Document Request System
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus next input when digit is entered
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.pin-input');
+
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', function(e) {
+                    if (e.target.value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+
+                // Prevent pasting
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -122,7 +122,7 @@ namespace ProjectCapstone.Pages
                 // Redirect based on role
                 if (user.Role == "Admin" || user.Role == "Staff")
                 {
-                    return RedirectToPage("/Dashboard/Admin");
+                    return RedirectToPage("/AdminPin");
                 }
                 else
                 {

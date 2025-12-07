@@ -79,7 +79,7 @@ namespace ProjectCapstone.Pages.Dashboard
             var pinVerified = HttpContext.Session.GetString("PinVerified");
             if (pinVerified != "true")
             {
-                return RedirectToPage("/AdminPin");
+                return RedirectToPage("../AdminPin");
             }
 
             FullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
