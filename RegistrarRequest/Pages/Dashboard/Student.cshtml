@@ -570,115 +570,97 @@
                             </tr>
                         </thead>
                         <tbody>
-    @foreach (var request in Model.AllRequests)
-    {
-        <tr>
-            <td><strong>@request.QueueNumber</strong></td>
-            <td>@request.DocumentType</td>
-            <td>@request.Purpose</td>
-            <td>@request.Quantity</td>
-            <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
-            
-            <!-- PAYMENT COLUMN -->
-            <td>
-                @if (request.TotalAmount > 0)
-                {
-                    <div>₱@request.TotalAmount.ToString("N2")</div>
-                    
-                    
-                        var payment = Model.RequestPayments.ContainsKey(request.RequestId) 
-                                      ? Model.RequestPayments[request.RequestId] 
-                                      : null;
-                    
-                    
-                    @if (payment == null)
-                    {
-                        <small style="color: #dc3545;">
-                            <i class="fas fa-exclamation-triangle"></i> Not Uploaded
-                        </small>
-                    }
-                    else if (payment.Status == "Pending Verification")
-                    {
-                        <small style="color: #f39c12;">
-                            <i class="fas fa-clock"></i> Pending Verification
-                        </small>
-                    }
-                    else if (payment.Status == "Verified")
-                    {
-                        <small style="color: #28a745;">
-                            <i class="fas fa-check-circle"></i> Verified
-                        </small>
-                    }
-                    else if (payment.Status == "Rejected")
-                    {
-                        <small style="color: #dc3545;">
-                            <i class="fas fa-times-circle"></i> Rejected
-                        </small>
-                    }
-                }
-                else
-                {
-                    <span style="color: #28a745;">Free</span>
-                }
-            </td>
-            
-            <!-- STATUS COLUMN -->
-            <td>
-                <span class="badge-status badge-@request.Status.ToLower()">@request.Status</span>
-            </td>
-            
-            <!-- ACTIONS COLUMN -->
-            <td>
-                @if (request.TotalAmount > 0)
-                {
-                    
-                        var actionPayment = Model.RequestPayments.ContainsKey(request.RequestId) 
-                                           ? Model.RequestPayments[request.RequestId] 
-                                           : null;
-                    
-                    
-                    @if (actionPayment == null)
-                    {
-                        <!-- No payment uploaded yet - SHOW UPLOAD BUTTON -->
-                        <a href="/DocumentRequest/Payment?requestId=@request.RequestId" 
-                           class="btn btn-sm"
-                           style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">
-                            <i class="fas fa-upload"></i> Upload Payment
-                        </a>
-                    }
-                    else if (actionPayment.Status == "Pending Verification")
-                    {
-                        <!-- Payment uploaded, waiting for admin -->
-                        <span style="color: #f39c12; font-size: 12px; font-weight: 600;">
-                            <i class="fas fa-clock"></i> Awaiting Verification
-                        </span>
-                    }
-                    else if (actionPayment.Status == "Verified")
-                    {
-                        <!-- Payment verified -->
-                        <span style="color: #28a745; font-size: 12px; font-weight: 600;">
-                            <i class="fas fa-check-circle"></i> Payment Verified
-                        </span>
-                    }
-                    else if (actionPayment.Status == "Rejected")
-                    {
-                        <!-- Payment REJECTED - SHOW RE-UPLOAD BUTTON -->
-                        <a href="/DocumentRequest/Payment?requestId=@request.RequestId" 
-                           class="btn btn-sm"
-                           style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">
-                            <i class="fas fa-exclamation-circle"></i> Re-upload Payment
-                        </a>
-                    }
-                }
-                else
-                {
-                    <!-- Free request, no payment needed -->
-                    <span style="color: #718096; font-size: 12px;">—</span>
-                }
-            </td>
-        </tr>
-    }
-</tbody>
+                            @foreach (var request in Model.AllRequests)
+                            {
+                                // --- REFACTORED: Get Payment object ONCE per row ---
+                                var payment = Model.RequestPayments != null && Model.RequestPayments.ContainsKey(request.RequestId)
+                                ? Model.RequestPayments[request.RequestId]
+                                : null;
+
+                                <tr>
+                                    <td><strong>@request.QueueNumber</strong></td>
+                                    <td>@request.DocumentType</td>
+                                    <td>@request.Purpose</td>
+                                    <td>@request.Quantity</td>
+                                    <td>@request.RequestDate.ToString("MMM dd, yyyy hh:mm tt")</td>
+
+                                    <td>
+                                        @if (request.TotalAmount > 0)
+                                        {
+                                            <div>₱@request.TotalAmount.ToString("N2")</div>
+
+                                            @if (payment == null)
+                                            {
+                                                <small style="color: #dc3545;">
+                                                    <i class="fas fa-exclamation-triangle"></i> Not Uploaded
+                                                </small>
+                                            }
+                                            else if (payment.Status == "Pending Verification")
+                                            {
+                                                <small style="color: #f39c12;">
+                                                    <i class="fas fa-clock"></i> Pending Verification
+                                                </small>
+                                            }
+                                            else if (payment.Status == "Verified")
+                                            {
+                                                <small style="color: #28a745;">
+                                                    <i class="fas fa-check-circle"></i> Verified
+                                                </small>
+                                            }
+                                            else if (payment.Status == "Rejected")
+                                            {
+                                                <small style="color: #dc3545;">
+                                                    <i class="fas fa-times-circle"></i> Rejected
+                                                </small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span style="color: #28a745;">Free</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <span class="badge-status badge-@request.Status.ToLower()">@request.Status</span>
+                                    </td>
+
+                                    <td>
+                                        @if (request.TotalAmount > 0)
+                                        {
+                                            // --- REFACTORED: Use the 'payment' variable instead of 'actionPayment' ---
+                                            @if (payment == null || payment.Status == "Rejected")
+                                            {
+                                                // Determine button text based on status
+                                                var buttonText = payment == null ? "Upload Payment" : "Re-upload Payment";
+                                                var buttonIcon = payment == null ? "fa-upload" : "fa-exclamation-circle";
+
+                                                <a href="/DocumentRequest/Payment?requestId=@request.RequestId"  
+                                                                 class="btn btn-sm"
+                                                                 style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas @buttonIcon"></i> @buttonText
+                                                </a>
+                                            }
+                                            else if (payment.Status == "Pending Verification")
+                                            {
+                                                <span style="color: #f39c12; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-clock"></i> Awaiting Verification
+                                                </span>
+                                            }
+                                            else if (payment.Status == "Verified")
+                                            {
+                                                <span style="color: #28a745; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-check-circle"></i> Payment Verified
+                                                </span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span style="color: #718096; font-size: 12px;">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
 
                    
             </table>

@@ -836,50 +836,286 @@
         <!-- HISTORY SECTION -->
         <div id="history-section" class="section-content">
             <h3 class="section-title"><i class="fas fa-history"></i> Request History</h3>
+
+            <!-- Search and Filter Controls -->
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                    <!-- Search Bar -->
+                    <div style="flex: 1; min-width: 300px;">
+                        <div style="position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #718096;"></i>
+                            <input type="text" id="historySearchInput"
+                                   placeholder="Search by student name or number..."
+                                   style="width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; transition: all 0.3s;"
+                                   oninput="filterHistory()"
+                                   onfocus="this.style.borderColor='#0d5c2f'"
+                                   onblur="this.style.borderColor='#e2e8f0'">
+                        </div>
+                    </div>
+
+                    <!-- Document Type Filter -->
+                    <div style="min-width: 200px;">
+                        <select id="documentTypeFilter"
+                                style="width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; cursor: pointer; background: white;"
+                                onchange="filterHistory()">
+                            <option value="all">All Documents</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="Transcript of Records (TOR)">Transcript of Records (TOR)</option>
+                            <option value="Certificate of Enrollment">Certificate of Enrollment</option>
+                            <option value="Certificate of Grades">Certificate of Grades</option>
+                            <option value="Form 137">Form 137</option>
+                            <option value="Good Moral Certificate">Good Moral Certificate</option>
+                            <option value="Honorable Dismissal">Honorable Dismissal</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div style="min-width: 180px;">
+                        <select id="statusFilter"
+                                style="width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; cursor: pointer; background: white;"
+                                onchange="filterHistory()">
+                            <option value="all">All Status</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear Filters Button -->
+                    <button onclick="clearHistoryFilters()"
+                            style="padding: 12px 20px; background: #e2e8f0; color: #4a5568; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s;"
+                            onmouseover="this.style.background='#cbd5e0'"
+                            onmouseout="this.style.background='#e2e8f0'">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+
+                <!-- Results Count -->
+                <div id="historyResultsCount" style="margin-top: 15px; color: #718096; font-size: 13px; font-weight: 600;">
+                    Showing <span id="historyVisibleCount">0</span> of <span id="historyTotalCount">0</span> requests
+                </div>
+            </div>
+
+            <!-- History Table -->
             <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
                 @if (Model.HistoryDocuments != null && Model.HistoryDocuments.Count > 0)
                 {
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Queue #</th>
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Student</th>
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Document</th>
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Requested</th>
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Completed</th>
-                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var doc in Model.HistoryDocuments)
-                            {
-                                <tr style="border-bottom: 1px solid #e2e8f0;">
-                                    <td style="padding: 12px;"><strong>@doc.QueueNumber</strong></td>
-                                    <td style="padding: 12px;">@doc.StudentName</td>
-                                    <td style="padding: 12px;">@doc.DocumentType</td>
-                                    <td style="padding: 12px;">@doc.RequestDate.ToString("MMM dd, yyyy")</td>
-                                    <td style="padding: 12px;">@(doc.ReadyDate?.ToString("MMM dd, yyyy") ?? "-")</td>
-                                    <td style="padding: 12px;">
-                                        @if (doc.Status == "Completed")
-                                        {
-                                            <span style="background: #d1ecf1; color: #004085; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">✓ Completed</span>
-                                        }
-                                        else
-                                        {
-                                            <span style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">✗ Cancelled</span>
-                                        }
-                                    </td>
+                    <div style="overflow-x: auto;">
+                        <table id="historyTable" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; cursor: pointer;" onclick="sortHistoryTable(0)">
+                                        Queue # <i class="fas fa-sort" style="font-size: 12px; color: #718096;"></i>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; cursor: pointer;" onclick="sortHistoryTable(1)">
+                                        Student <i class="fas fa-sort" style="font-size: 12px; color: #718096;"></i>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; cursor: pointer;" onclick="sortHistoryTable(2)">
+                                        Document <i class="fas fa-sort" style="font-size: 12px; color: #718096;"></i>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; cursor: pointer;" onclick="sortHistoryTable(3)">
+                                        Requested <i class="fas fa-sort" style="font-size: 12px; color: #718096;"></i>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; cursor: pointer;" onclick="sortHistoryTable(4)">
+                                        Completed <i class="fas fa-sort" style="font-size: 12px; color: #718096;"></i>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Status</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                @foreach (var doc in Model.HistoryDocuments)
+                                {
+                                    <tr class="history-row"
+                                        data-student="@doc.StudentName.ToLower()"
+                                        data-student-number="@doc.StudentNumber.ToLower()"
+                                        data-document="@doc.DocumentType"
+                                        data-status="@doc.Status"
+                                        style="border-bottom: 1px solid #e2e8f0; transition: all 0.2s;">
+                                        <td style="padding: 12px;"><strong>@doc.QueueNumber</strong></td>
+                                        <td style="padding: 12px;">
+                                            <div style="font-weight: 600; color: #2d3748;">@doc.StudentName</div>
+                                            <div style="font-size: 12px; color: #718096;">@doc.StudentNumber</div>
+                                        </td>
+                                        <td style="padding: 12px;">
+                                            <span style="background: #e7e3fc; color: #667eea; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;">
+                                                @doc.DocumentType
+                                            </span>
+                                        </td>
+                                        <td style="padding: 12px;">@doc.RequestDate.ToString("MMM dd, yyyy")</td>
+                                        <td style="padding: 12px;">@(doc.ReadyDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                        <td style="padding: 12px;">
+                                            @if (doc.Status == "Completed")
+                                            {
+                                                <span style="background: #d1ecf1; color: #004085; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-check-circle"></i> Completed
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-times-circle"></i> Cancelled
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- No Results Message -->
+                    <div id="noHistoryResults" style="display: none; text-align: center; padding: 40px; color: #718096;">
+                        <i class="fas fa-search" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
+                        <h4 style="margin-bottom: 10px;">No Results Found</h4>
+                        <p>Try adjusting your search or filters</p>
+                    </div>
                 }
                 else
                 {
-                    <div class="empty-state"><i class="fas fa-history"></i><h4>No History</h4><p>Completed requests will appear here.</p></div>
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h4>No History</h4>
+                        <p>Completed requests will appear here.</p>
+                    </div>
                 }
             </div>
         </div>
+
+        <script>
+            // Initialize counts on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                updateHistoryCount();
+            });
+
+            // Filter history table
+            function filterHistory() {
+                const searchInput = document.getElementById('historySearchInput').value.toLowerCase();
+                const documentFilter = document.getElementById('documentTypeFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const rows = document.querySelectorAll('.history-row');
+
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const studentName = row.getAttribute('data-student');
+                    const studentNumber = row.getAttribute('data-student-number');
+                    const documentType = row.getAttribute('data-document');
+                    const status = row.getAttribute('data-status');
+
+                    const matchesSearch = searchInput === '' ||
+                                          studentName.includes(searchInput) ||
+                                          studentNumber.includes(searchInput);
+
+                    const matchesDocument = documentFilter === 'all' || documentType === documentFilter;
+                    const matchesStatus = statusFilter === 'all' || status === statusFilter;
+
+                    if (matchesSearch && matchesDocument && matchesStatus) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                updateHistoryCount();
+
+                // Show/hide no results message
+                const noResults = document.getElementById('noHistoryResults');
+                const table = document.getElementById('historyTable');
+                if (visibleCount === 0 && rows.length > 0) {
+                    if (table) table.style.display = 'none';
+                    if (noResults) noResults.style.display = 'block';
+                } else {
+                    if (table) table.style.display = 'table';
+                    if (noResults) noResults.style.display = 'none';
+                }
+            }
+
+            // Update count display
+            function updateHistoryCount() {
+                const rows = document.querySelectorAll('.history-row');
+                const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+
+                const visibleCountEl = document.getElementById('historyVisibleCount');
+                const totalCountEl = document.getElementById('historyTotalCount');
+
+                if (visibleCountEl) visibleCountEl.textContent = visibleRows.length;
+                if (totalCountEl) totalCountEl.textContent = rows.length;
+            }
+
+            // Clear all filters
+            function clearHistoryFilters() {
+                document.getElementById('historySearchInput').value = '';
+                document.getElementById('documentTypeFilter').value = 'all';
+                document.getElementById('statusFilter').value = 'all';
+                filterHistory();
+            }
+
+            // Sort table by column
+            let historySortDirection = {};
+            function sortHistoryTable(columnIndex) {
+                const table = document.getElementById('historyTable');
+                const tbody = document.getElementById('historyTableBody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                // Toggle sort direction
+                historySortDirection[columnIndex] = !historySortDirection[columnIndex];
+                const ascending = historySortDirection[columnIndex];
+
+                rows.sort((a, b) => {
+                    const aText = a.cells[columnIndex].textContent.trim();
+                    const bText = b.cells[columnIndex].textContent.trim();
+
+                    // Try to parse as date first
+                    const aDate = new Date(aText);
+                    const bDate = new Date(bText);
+
+                    if (!isNaN(aDate) && !isNaN(bDate)) {
+                        return ascending ? aDate - bDate : bDate - aDate;
+                    }
+
+                    // Otherwise compare as string
+                    return ascending ?
+                        aText.localeCompare(bText) :
+                        bText.localeCompare(aText);
+                });
+
+                // Re-append sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+            }
+
+            // Add hover effect to table rows
+            document.addEventListener('DOMContentLoaded', function() {
+                const rows = document.querySelectorAll('.history-row');
+                rows.forEach(row => {
+                    row.addEventListener('mouseenter', function() {
+                        this.style.background = '#f7fafc';
+                    });
+                    row.addEventListener('mouseleave', function() {
+                        this.style.background = '';
+                    });
+                });
+            });
+        </script>
+
+        <style>
+            /* Smooth transitions for table rows */
+            .history-row {
+                transition: background-color 0.2s ease;
+            }
+
+            /* Search input focus animation */
+            #historySearchInput:focus {
+                box-shadow: 0 0 0 3px rgba(13, 92, 47, 0.1);
+            }
+
+            /* Hover effects for select dropdowns */
+            #documentTypeFilter:hover,
+            #statusFilter:hover {
+                border-color: #0d5c2f;
+            }
+        </style>
+
+       
     </div>
 
     <script>
