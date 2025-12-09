@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using MongoDB.Driver;
 using ProjectCapstone.Models;
 using ProjectCapstone.Services;
+using System.Text;
 
 namespace ProjectCapstone.Pages.Dashboard
 {
@@ -101,9 +102,93 @@ namespace ProjectCapstone.Pages.Dashboard
 
             return Page();
         }
+
         private async Task LoadAllPayments()
         {
             AllPayments = await _mongoDBService.GetAllPaymentsAsync();
+        }
+
+        // CORRECT CSV EXPORT METHOD - KEEP THIS ONE
+        public async Task<IActionResult> OnPostExportRecordsCSVAsync(string status, string documentType, string searchQuery)
+        {
+            try
+            {
+                // Get all requests with user info
+                var requests = await _mongoDBService.GetAllRequestsWithUsersAsync();
+
+                // Convert to AdminDocumentRequest
+                var allRecords = requests.Select(r => new AdminDocumentRequest
+                {
+                    RequestId = r.RequestId,
+                    QueueNumber = r.QueueNumber,
+                    DocumentType = r.DocumentType,
+                    Purpose = r.Purpose,
+                    Quantity = r.Quantity,
+                    RequestDate = r.RequestDate,
+                    ReadyDate = r.CompletedDate,
+                    Status = r.Status,
+                    StudentName = r.StudentName,
+                    StudentNumber = r.StudentNumber,
+                    StudentEmail = r.StudentEmail,
+                    TotalAmount = r.TotalAmount
+                }).ToList();
+
+                // Apply filters
+                var filteredRecords = allRecords.AsEnumerable();
+
+                if (status != "all")
+                {
+                    filteredRecords = filteredRecords.Where(r => r.Status == status);
+                }
+
+                if (documentType != "all")
+                {
+                    filteredRecords = filteredRecords.Where(r => r.DocumentType == documentType);
+                }
+
+                if (!string.IsNullOrEmpty(searchQuery))
+                {
+                    searchQuery = searchQuery.ToLower();
+                    filteredRecords = filteredRecords.Where(r =>
+                        r.StudentName.ToLower().Contains(searchQuery) ||
+                        r.StudentNumber.ToLower().Contains(searchQuery));
+                }
+
+                var recordsList = filteredRecords.OrderByDescending(r => r.RequestDate).ToList();
+
+                // Build CSV
+                var csv = new StringBuilder();
+                csv.AppendLine("Queue Number,Student Name,Student Number,Email,Document Type,Purpose,Quantity,Request Date,Status,Completed Date");
+
+                foreach (var rec in recordsList)
+                {
+                    csv.AppendLine($"{rec.QueueNumber}," +
+                                  $"\"{rec.StudentName}\"," +
+                                  $"{rec.StudentNumber}," +
+                                  $"\"{rec.StudentEmail}\"," +
+                                  $"\"{rec.DocumentType}\"," +
+                                  $"\"{rec.Purpose}\"," +
+                                  $"{rec.Quantity}," +
+                                  $"{rec.RequestDate:yyyy-MM-dd HH:mm}," +
+                                  $"{rec.Status}," +
+                                  $"{(rec.ReadyDate.HasValue ? rec.ReadyDate.Value.ToString("yyyy-MM-dd HH:mm") : "-")}");
+                }
+
+                // Generate filename
+                var statusPart = status != "all" ? status : "All";
+                var docTypePart = documentType != "all" ? documentType.Replace(" ", "_") : "AllDocs";
+                var fileName = $"CDM_Records_{statusPart}_{docTypePart}_{DateTime.Now:yyyy-MM-dd_HHmm}.csv";
+
+                var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+
+                return File(bytes, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error exporting CSV: {ex.Message}");
+                ErrorMessage = $"❌ Error exporting CSV: {ex.Message}";
+                return RedirectToPage();
+            }
         }
 
         public async Task<IActionResult> OnPostMarkReadyAsync(int requestId)
@@ -295,8 +380,8 @@ namespace ProjectCapstone.Pages.Dashboard
         {
             var requests = await _mongoDBService.GetAllRequestsWithUsersAsync();
 
+            // CHANGED: Load ALL requests (not just Completed/Cancelled)
             HistoryDocuments = requests
-                .Where(r => r.Status == "Completed" || r.Status == "Cancelled")
                 .OrderByDescending(r => r.CompletedDate ?? r.RequestDate)
                 .Select(r => new AdminDocumentRequest
                 {
@@ -377,9 +462,6 @@ namespace ProjectCapstone.Pages.Dashboard
                 // Verify payment
                 await _mongoDBService.VerifyPaymentAsync(paymentId, "Verified");
 
-                // Update request payment status (keep status as Pending, don't move to Processing yet)
-                // Admin will manually click "Start Processing" after payment verification
-
                 // Send email notification
                 if (request != null && user != null)
                 {
@@ -415,7 +497,6 @@ namespace ProjectCapstone.Pages.Dashboard
                 return RedirectToPage();
             }
         }
-
 
         // ADDED: Reject payment handler
         public async Task<IActionResult> OnPostRejectPaymentAsync(int paymentId, string rejectionReason)
@@ -480,7 +561,6 @@ namespace ProjectCapstone.Pages.Dashboard
             }
         }
 
-        // ADD THIS METHOD:
         public async Task<IActionResult> OnPostStartProcessingAsync(int requestId)
         {
             try
@@ -515,8 +595,6 @@ namespace ProjectCapstone.Pages.Dashboard
             }
         }
 
-
-        // ADD THIS METHOD TOO:
         public async Task<IActionResult> OnPostCompleteRequestAsync(int requestId)
         {
             try
@@ -572,9 +650,7 @@ namespace ProjectCapstone.Pages.Dashboard
             }
         }
 
-
-
-    }
+    } // ← AdminModel class ends here
 
     public class AdminDocumentRequest
     {

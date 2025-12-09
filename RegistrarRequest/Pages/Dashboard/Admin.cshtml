@@ -421,6 +421,93 @@
                 color: white;
             }
 
+        /* Modern Main Status Badge */
+        .main-status-badge {
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #ff9a00, #ff6b00);
+            color: white;
+        }
+
+        .status-processing {
+            background: linear-gradient(135deg, #0099ff, #0077cc);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .status-ready {
+            background: linear-gradient(135deg, #00d4aa, #00b894);
+            color: white;
+        }
+
+        .status-completed {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: white;
+        }
+
+        /* Payment Status Badges */
+        .payment-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-left: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+            .payment-badge.paid {
+                background: #00b894;
+                color: white;
+            }
+
+            .payment-badge.pending-verification {
+                background: #f39c12;
+                color: white;
+            }
+
+            .payment-badge.unpaid {
+                background: #e17055;
+                color: white;
+            }
+
+            .payment-badge.free {
+                background: #6c5ce7;
+                color: white;
+            }
+
+        /* Pulse animation for Processing */
+        @@keyframes pulse {
+            0%
+
+        {
+            box-shadow: 0 0 0 0 rgba(0, 153, 255, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 153, 255, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 153, 255, 0);
+        }
+
+        }
+
     </style>
 </head>
 <body>
@@ -456,9 +543,10 @@
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'history'); return false;">
-                    <i class="fas fa-history"></i> History
+                    <i class="fas fa-database"></i> All Records
                 </a>
             </li>
+
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="showSection(event, 'payments'); return false;">
                     <i class="fas fa-credit-card"></i> Payment Verification
@@ -540,121 +628,144 @@
     <!-- ALL REQUESTS SECTION -->
 <div id="requests-section" class="section-content active">
     <h3 class="section-title">Document Requests</h3>
+
     @if (Model.AllRequests != null && Model.AllRequests.Count > 0)
     {
         foreach (var doc in Model.AllRequests)
         {
+            
+                var requiresPayment = doc.TotalAmount > 0;
+                var payment = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
+                var paymentVerified = payment != null && payment.Status == "Verified";
+                var paymentPending = payment != null && payment.Status == "Pending Verification";
+                
+                // Dynamic status styling
+                var statusClass = doc.Status.ToLower() switch
+                {
+                    "pending" => "status-pending",
+                    "processing" => "status-processing",
+                    "ready" => "status-ready",
+                    "completed" => "status-completed",
+                    _ => "status-default"
+                };
+
+                var statusIcon = doc.Status.ToLower() switch
+                {
+                    "pending" => "fa-clock",
+                    "processing" => "fa-spinner fa-spin",
+                    "ready" => "fa-check-circle",
+                    "completed" => "fa-flag-checkered",
+                    _ => "fa-question-circle"
+                };
+            
+
             <div class="document-card">
                 <div class="document-header">
                     <div>
                         <h4 class="document-title">@doc.DocumentType</h4>
                         <span class="queue-badge"># @doc.QueueNumber</span>
 
-                        @{
-                            var requiresPayment = doc.TotalAmount > 0;
-                            var payment = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
-                            var paymentVerified = payment != null && payment.Status == "Verified";
-                            var paymentPending = payment != null && payment.Status == "Pending Verification";
-                        }
-
+                        <!-- Payment Status Badges (Beautiful & Clear) -->
                         @if (requiresPayment)
                         {
-                            @if (paymentVerified)
+                            if (paymentVerified)
                             {
-                                <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
-                                    <i class="fas fa-check-circle"></i> PAID
+                                <span class="payment-badge paid">
+                                    <i class="fas fa-check-double"></i> PAID
                                 </span>
                             }
                             else if (paymentPending)
                             {
-                                <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
-                                    <i class="fas fa-clock"></i> PAYMENT PENDING
+                                <span class="payment-badge pending-verification">
+                                    <i class="fas fa-hourglass-half"></i> AWAITING VERIFICATION
                                 </span>
                             }
                             else
                             {
-                                <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">
-                                    <i class="fas fa-exclamation-circle"></i> UNPAID
+                                <span class="payment-badge unpaid">
+                                    <i class="fas fa-exclamation-triangle"></i> UNPAID
                                 </span>
                             }
                         }
+                        else
+                        {
+                            <span class="payment-badge free">
+                                <i class="fas fa-gift"></i> FREE
+                            </span>
+                        }
                     </div>
-                    <span class="status-badge status-@doc.Status.ToLower()">@doc.Status</span>
+
+                    <!-- Gorgeous Main Status Badge -->
+                    <div class="main-status-badge @statusClass">
+                        <i class="fas @statusIcon"></i>
+                        <span>@doc.Status.ToUpper()</span>
+                    </div>
                 </div>
 
                 <div class="document-info">
                     <div class="info-item"><strong>Student:</strong> @doc.StudentName</div>
-                    <div class="info-item"><strong>Student #:</strong> @doc.StudentNumber</div>
+                    <div class="info-item"><strong>ID:</strong> @doc.StudentNumber</div>
                     <div class="info-item"><strong>Purpose:</strong> @doc.Purpose</div>
                     <div class="info-item"><strong>Copies:</strong> @doc.Quantity</div>
-                    <div class="info-item"><strong>Requested:</strong> @doc.RequestDate.ToString("yyyy-MM-dd")</div>
+                    <div class="info-item"><strong>Requested:</strong> @doc.RequestDate:MMM dd, yyyy</div>
                     <div class="info-item"><strong>Email:</strong> @doc.StudentEmail</div>
                 </div>
 
                 <div class="action-buttons">
                     @if (doc.Status == "Pending")
                     {
-                        
-                            var requiresPaymentBtn = doc.TotalAmount > 0;
-                            var paymentBtn = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
-                            var paymentVerifiedBtn = paymentBtn != null && paymentBtn.Status == "Verified";
-                            var paymentPendingBtn = paymentBtn != null && paymentBtn.Status == "Pending Verification";
-                        
+                        var requiresPaymentBtn = doc.TotalAmount > 0;
+                        var paymentBtn = Model.AllPayments?.FirstOrDefault(p => p.RequestId == doc.RequestId);
+                        var paymentVerifiedBtn = paymentBtn != null && paymentBtn.Status == "Verified";
+                        var paymentPendingBtn = paymentBtn != null && paymentBtn.Status == "Pending Verification";
 
                         @if (requiresPaymentBtn && !paymentVerifiedBtn)
                         {
                             @if (paymentPendingBtn)
                             {
-                                <!-- Payment uploaded but not verified yet -->
-                                <a href="#" onclick="showSection(event, 'payments'); scrollToPayment(@doc.RequestId); return false;" 
+                                <a href="#" onclick="showSection(event, 'payments'); scrollToPayment(@doc.RequestId); return false;"
                                    class="btn-action" style="background: #f39c12; color: white;">
                                     <i class="fas fa-credit-card"></i> Verify Payment
                                 </a>
                             }
                             else
                             {
-                                <!-- Payment not uploaded yet -->
-                                <button type="button" class="btn-action" 
-                                        style="background: #cbd5e0; color: #718096; cursor: not-allowed;" 
-                                        disabled 
-                                        title="Student must upload payment first">
+                                <button type="button" class="btn-action" disabled style="background: #94a3b8; color: white; opacity: 0.8;">
                                     <i class="fas fa-clock"></i> Awaiting Payment
                                 </button>
                             }
                         }
                         else
                         {
-                            <!-- Payment verified or not required - can start processing -->
-                            <form method="post" asp-page-handler="StartProcessing" style="display: inline;">
+                            <form method="post" asp-page-handler="StartProcessing" style="display:inline;">
                                 <input type="hidden" name="requestId" value="@doc.RequestId" />
-                                <button type="submit" class="btn-action btn-process" style="background: #28a745; color: white;">
-                                    <i class="fas fa-play-circle"></i> Start Processing
+                                <button type="submit" class="btn-action btn-process">
+                                    <i class="fas fa-play"></i> Start Processing
                                 </button>
                             </form>
                         }
                     }
-    
-                    <!-- Keep existing buttons for other statuses -->
+
                     @if (doc.Status == "Processing")
                     {
-                        <form method="post" asp-page-handler="MarkReady" style="display: inline;">
+                        <form method="post" asp-page-handler="MarkReady" style="display:inline;">
                             <input type="hidden" name="requestId" value="@doc.RequestId" />
                             <button type="submit" class="btn-action btn-complete">
-                                <i class="fas fa-check-circle"></i> Mark as Ready
+                                <i class="fas fa-check"></i> Mark as Ready
                             </button>
                         </form>
                     }
-    
+
                     @if (doc.Status == "Ready")
                     {
-                        <form method="post" asp-page-handler="CompleteRequest" style="display: inline;">
+                        <form method="post" asp-page-handler="CompleteRequest" style="display:inline;">
                             <input type="hidden" name="requestId" value="@doc.RequestId" />
-                            <button type="submit" class="btn-action btn-complete">
-                                <i class="fas fa-flag-checkered"></i> Complete
+                            <button type="submit" class="btn-action btn-success">
+                                <i class="fas fa-hand-holding"></i> Release Document
                             </button>
                         </form>
                     }
-    
+
                     <button class="btn-action btn-view" onclick="showDetails(@doc.RequestId)">
                         <i class="fas fa-eye"></i> View Details
                     </button>
@@ -665,9 +776,9 @@
     else
     {
         <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <h4>No Pending Requests</h4>
-            <p>All clear! No requests to process at the moment.</p>
+            <i class="fas fa-inbox" style="font-size: 80px; opacity: 0.3;"></i>
+            <h4>No Requests Yet</h4>
+            <p>Everything is up to date! Enjoy the calm</p>
         </div>
     }
 </div>
@@ -835,7 +946,8 @@
 
         <!-- HISTORY SECTION -->
         <div id="history-section" class="section-content">
-            <h3 class="section-title"><i class="fas fa-history"></i> Request History</h3>
+            <h3 class="section-title"><i class="fas fa-database"></i> All Records</h3>
+
 
             <!-- Search and Filter Controls -->
             <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
@@ -875,11 +987,15 @@
                                 style="width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; cursor: pointer; background: white;"
                                 onchange="filterHistory()">
                             <option value="all">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Ready">Ready</option>
                             <option value="Completed">Completed</option>
                             <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
 
+                    <!-- Clear Filters Button -->
                     <!-- Clear Filters Button -->
                     <button onclick="clearHistoryFilters()"
                             style="padding: 12px 20px; background: #e2e8f0; color: #4a5568; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s;"
@@ -887,6 +1003,20 @@
                             onmouseout="this.style.background='#e2e8f0'">
                         <i class="fas fa-times"></i> Clear
                     </button>
+
+                    <!-- CSV Download Button -->
+                    <form method="post" asp-page-handler="ExportRecordsCSV" style="display: inline;">
+                        <input type="hidden" name="status" id="csv-status-filter" value="all" />
+                        <input type="hidden" name="documentType" id="csv-doctype-filter" value="all" />
+                        <input type="hidden" name="searchQuery" id="csv-search-filter" value="" />
+                        <button type="submit"
+                                style="padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s;"
+                                onmouseover="this.style.background='#218838'"
+                                onmouseout="this.style.background='#28a745'">
+                            <i class="fas fa-file-csv"></i> Download CSV
+                        </button>
+                    </form>
+
                 </div>
 
                 <!-- Results Count -->
@@ -943,19 +1073,38 @@
                                         <td style="padding: 12px;">@doc.RequestDate.ToString("MMM dd, yyyy")</td>
                                         <td style="padding: 12px;">@(doc.ReadyDate?.ToString("MMM dd, yyyy") ?? "-")</td>
                                         <td style="padding: 12px;">
-                                            @if (doc.Status == "Completed")
+                                            @if (doc.Status == "Pending")
+                                            {
+                                                <span style="background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-clock"></i> Pending
+                                                </span>
+                                            }
+                                            else if (doc.Status == "Processing")
+                                            {
+                                                <span style="background: #d1ecf1; color: #0c5460; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-spinner"></i> Processing
+                                                </span>
+                                            }
+                                            else if (doc.Status == "Ready")
+                                            {
+                                                <span style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                                                    <i class="fas fa-check-circle"></i> Ready
+                                                </span>
+                                            }
+                                            else if (doc.Status == "Completed")
                                             {
                                                 <span style="background: #d1ecf1; color: #004085; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
                                                     <i class="fas fa-check-circle"></i> Completed
                                                 </span>
                                             }
-                                            else
+                                            else if (doc.Status == "Cancelled")
                                             {
                                                 <span style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
                                                     <i class="fas fa-times-circle"></i> Cancelled
                                                 </span>
                                             }
                                         </td>
+
                                     </tr>
                                 }
                             </tbody>
@@ -987,25 +1136,34 @@
             });
 
             // Filter history table
+                        // Filter history table
+                        // Filter history table
             function filterHistory() {
                 const searchInput = document.getElementById('historySearchInput').value.toLowerCase();
                 const documentFilter = document.getElementById('documentTypeFilter').value;
                 const statusFilter = document.getElementById('statusFilter').value;
-                const rows = document.querySelectorAll('.history-row');
 
+                // UPDATE HIDDEN FORM FIELDS FOR CSV EXPORT
+                document.getElementById('csv-status-filter').value = statusFilter;
+                document.getElementById('csv-doctype-filter').value = documentFilter;
+                document.getElementById('csv-search-filter').value = searchInput;
+
+                const rows = document.querySelectorAll('.history-row');
                 let visibleCount = 0;
 
                 rows.forEach(row => {
                     const studentName = row.getAttribute('data-student');
                     const studentNumber = row.getAttribute('data-student-number');
                     const documentType = row.getAttribute('data-document');
-                    const status = row.getAttribute('data-status');
+                    const status = row.getAttribute('data-status'); // This gets "Pending", "Ready", "Cancelled", etc.
 
                     const matchesSearch = searchInput === '' ||
                                           studentName.includes(searchInput) ||
                                           studentNumber.includes(searchInput);
 
                     const matchesDocument = documentFilter === 'all' || documentType === documentFilter;
+
+                    // FIX: Make sure we're comparing the EXACT status values
                     const matchesStatus = statusFilter === 'all' || status === statusFilter;
 
                     if (matchesSearch && matchesDocument && matchesStatus) {
@@ -1029,6 +1187,8 @@
                     if (noResults) noResults.style.display = 'none';
                 }
             }
+
+
 
             // Update count display
             function updateHistoryCount() {
@@ -1262,7 +1422,7 @@
             <div style="background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%); color: white; padding: 25px 30px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 24px; font-weight: 700;">
                     <i class="fas fa-file-alt" style="margin-right: 10px;"></i>
-                    Request Details
+                    All Records
                 </h3>
                 <button onclick="closeDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; font-size: 28px; color: white; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;">
                     &times;
