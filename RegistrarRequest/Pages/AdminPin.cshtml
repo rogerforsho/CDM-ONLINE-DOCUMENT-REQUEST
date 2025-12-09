@@ -144,6 +144,9 @@
             border-radius: 12px;
             transition: all 0.3s;
             color: #2d3748;
+            /* CHANGED: Use password type styling */
+            -webkit-text-security: disc;
+            text-security: disc;
         }
 
             .pin-input:focus {
@@ -153,10 +156,15 @@
                 transform: scale(1.05);
             }
 
+            /* Remove number input arrows */
             .pin-input::-webkit-outer-spin-button,
             .pin-input::-webkit-inner-spin-button {
                 -webkit-appearance: none;
                 margin: 0;
+            }
+
+            .pin-input[type=number] {
+                -moz-appearance: textfield;
             }
 
         .attempts-warning {
@@ -265,20 +273,41 @@
             </div>
         }
 
-        <form method="post">
+        <form method="post" id="pinForm">
             <div class="pin-inputs">
-                <input type="number" name="pin1" maxlength="1" class="pin-input"
-                       pattern="[0-9]" required autofocus
-                       oninput="this.value=this.value.slice(0,1)" />
-                <input type="number" name="pin2" maxlength="1" class="pin-input"
-                       pattern="[0-9]" required
-                       oninput="this.value=this.value.slice(0,1)" />
-                <input type="number" name="pin3" maxlength="1" class="pin-input"
-                       pattern="[0-9]" required
-                       oninput="this.value=this.value.slice(0,1)" />
-                <input type="number" name="pin4" maxlength="1" class="pin-input"
-                       pattern="[0-9]" required
-                       oninput="this.value=this.value.slice(0,1)" />
+                <input type="password"
+                       inputmode="numeric"
+                       name="pin1"
+                       maxlength="1"
+                       class="pin-input"
+                       pattern="[0-9]"
+                       required
+                       autofocus
+                       autocomplete="off" />
+                <input type="password"
+                       inputmode="numeric"
+                       name="pin2"
+                       maxlength="1"
+                       class="pin-input"
+                       pattern="[0-9]"
+                       required
+                       autocomplete="off" />
+                <input type="password"
+                       inputmode="numeric"
+                       name="pin3"
+                       maxlength="1"
+                       class="pin-input"
+                       pattern="[0-9]"
+                       required
+                       autocomplete="off" />
+                <input type="password"
+                       inputmode="numeric"
+                       name="pin4"
+                       maxlength="1"
+                       class="pin-input"
+                       pattern="[0-9]"
+                       required
+                       autocomplete="off" />
             </div>
 
             <div class="attempts-warning">
@@ -304,26 +333,49 @@
     </div>
 
     <script>
-        // Auto-focus next input when digit is entered
         document.addEventListener('DOMContentLoaded', function() {
             const inputs = document.querySelectorAll('.pin-input');
 
             inputs.forEach((input, index) => {
+                // Only allow numbers
                 input.addEventListener('input', function(e) {
-                    if (e.target.value.length === 1 && index < inputs.length - 1) {
+                    // Remove non-numeric characters
+                    this.value = this.value.replace(/[^0-9]/g, '');
+
+                    // Limit to 1 character
+                    if (this.value.length > 1) {
+                        this.value = this.value.slice(0, 1);
+                    }
+
+                    // Auto-focus next input
+                    if (this.value.length === 1 && index < inputs.length - 1) {
                         inputs[index + 1].focus();
                     }
                 });
 
+                // Handle backspace
                 input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                    if (e.key === 'Backspace' && this.value === '' && index > 0) {
                         inputs[index - 1].focus();
                     }
                 });
 
-                // Prevent pasting
+                // Prevent paste
                 input.addEventListener('paste', function(e) {
                     e.preventDefault();
+                    const pasteData = e.clipboardData.getData('text');
+                    const numbers = pasteData.replace(/[^0-9]/g, '').split('');
+
+                    // If pasting multiple digits, fill all boxes
+                    numbers.forEach((num, i) => {
+                        if (index + i < inputs.length) {
+                            inputs[index + i].value = num;
+                        }
+                    });
+
+                    // Focus next empty or last input
+                    const nextIndex = Math.min(index + numbers.length, inputs.length - 1);
+                    inputs[nextIndex].focus();
                 });
             });
         });
