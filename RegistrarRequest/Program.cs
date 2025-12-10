@@ -79,6 +79,16 @@ app.MapGet("/", context =>
 app.MapControllers();
 app.MapRazorPages();
 
+// Seed departments on startup
+using (var scope = app.Services.CreateScope())
+{
+    var mongoService = scope.ServiceProvider.GetRequiredService<MongoDBService>();
+    await mongoService.SeedDepartmentsAsync();
+}
+
+app.Run();
+
+
 
 
 app.Run();

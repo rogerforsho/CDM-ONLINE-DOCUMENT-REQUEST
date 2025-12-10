@@ -30,11 +30,13 @@ namespace ProjectCapstone.Controllers
                 _logger.LogInformation("📝 Submit request received");
 
                 var userId = _httpContextAccessor.HttpContext?.Session.GetInt32("UserId");
+                var user = await _mongoDBService.GetUserByIdAsync(userId.Value);
 
                 _logger.LogInformation($"🔐 UserId from session: {userId}");
 
                 if (userId == null)
                 {
+                    _logger.LogWarning($"⚠️ User not found: {userId}");
                     _logger.LogWarning("⚠️ User not logged in - no session UserId");
                     return Unauthorized(new { success = false, message = "User not logged in" });
                 }
@@ -59,6 +61,9 @@ namespace ProjectCapstone.Controllers
 
                 var documentRequest = new DocumentRequest
                 {
+                    DepartmentId = user.DepartmentId,
+                    DepartmentCode = user.DepartmentCode,
+                    DepartmentName = user.DepartmentName,
                     UserId = userId.Value,
                     DocumentTypeId = request.DocumentTypeId, // ADDED
                     DocumentType = SecurityHelper.SanitizeInput(request.DocumentType ?? documentType.DocumentName), // Use name from DB if not provided
@@ -155,7 +160,10 @@ namespace ProjectCapstone.Controllers
                     status = r.Status,
                     notes = r.Notes,
                     paymentStatus = r.PaymentStatus ?? string.Empty,
-                    totalAmount = r.TotalAmount
+                    totalAmount = r.TotalAmount,
+                    departmentId = r.DepartmentId,
+                    departmentCode = r.DepartmentCode,
+                    departmentName = r.DepartmentName
                 }));
             }
             catch (Exception ex)

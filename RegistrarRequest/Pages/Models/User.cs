@@ -36,6 +36,16 @@ namespace ProjectCapstone.Models
         [BsonElement("yearLevel")]
         public string? YearLevel { get; set; }
 
+        [BsonElement("departmentId")]
+        public int? DepartmentId { get; set; }
+
+        [BsonElement("departmentCode")]
+        public string DepartmentCode { get; set; } = string.Empty;
+
+        [BsonElement("departmentName")]
+        public string DepartmentName { get; set; } = string.Empty;
+
+
         [BsonElement("role")]
         public string Role { get; set; } = "Student";
 

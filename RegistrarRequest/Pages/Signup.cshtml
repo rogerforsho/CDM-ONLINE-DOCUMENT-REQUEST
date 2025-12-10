@@ -234,6 +234,18 @@
                                placeholder="your.email@example.com" required>
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-building"></i> Department</label>
+                        <select asp-for="DepartmentId" class="form-control" required>
+                            <option value="">Select Department</option>
+                            @foreach (var dept in Model.Departments)
+                            {
+                                <option value="@dept.DepartmentId">@dept.DepartmentName (@dept.DepartmentCode)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                    </div>
+
 
                     <div class="form-group">
                         <label>Contact Number <span class="required">*</span></label>

@@ -13,18 +13,24 @@ namespace ProjectCapstone.Services
         private readonly IMongoCollection<WorkflowHistory> _workflowHistory;
         private readonly IMongoCollection<Payment> _payments;
         private readonly IMongoDatabase _database;
+        private IMongoCollection<Department> _departments;
+
 
         public MongoDBService(IOptions<MongoDBSettings> mongoDBSettings)
         {
             var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
-            _database = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
+            var database = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
+            _departments = database.GetCollection<Department>("Departments");
 
-            _documentRequests = _database.GetCollection<DocumentRequest>(mongoDBSettings.Value.DocumentRequestsCollection);
-            _users = _database.GetCollection<User>(mongoDBSettings.Value.UsersCollection);
-            _sessionLogs = _database.GetCollection<SessionLog>(mongoDBSettings.Value.SessionLogsCollection);
-            _documentTypes = _database.GetCollection<DocumentType>(mongoDBSettings.Value.DocumentTypesCollection);
-            _workflowHistory = _database.GetCollection<WorkflowHistory>(mongoDBSettings.Value.WorkflowHistoryCollection);
-            _payments = _database.GetCollection<Payment>(mongoDBSettings.Value.PaymentsCollection);
+
+            _documentRequests = database.GetCollection<DocumentRequest>("DocumentRequests");
+            _users = database.GetCollection<User>(mongoDBSettings.Value.UsersCollection);
+            _sessionLogs = database.GetCollection<SessionLog>(mongoDBSettings.Value.SessionLogsCollection);
+            _documentTypes = database.GetCollection<DocumentType>(mongoDBSettings.Value.DocumentTypesCollection);
+            _workflowHistory = database.GetCollection<WorkflowHistory>(mongoDBSettings.Value.WorkflowHistoryCollection);
+            _payments = database.GetCollection<Payment>(mongoDBSettings.Value.PaymentsCollection);
+            _departments = database.GetCollection<Department>("Departments");
+
         }
 
         // ================= DOCUMENT REQUEST METHODS =================
@@ -226,30 +232,57 @@ namespace ProjectCapstone.Services
 
         public async Task<List<RequestWithUser>> GetAllRequestsWithUsersAsync()
         {
-            var requests = await _documentRequests.Find(_ => true).ToListAsync();
-            var users = await _users.Find(_ => true).ToListAsync();
-
-            return requests.Select(r =>
+            try
             {
-                var user = users.FirstOrDefault(u => u.UserId == r.UserId);
+                var requests = await _documentRequests.Find(_ => true).ToListAsync();
+                var users = await _users.Find(_ => true).ToListAsync();
 
-                return new RequestWithUser
+                var result = new List<RequestWithUser>();
+
+                foreach (var r in requests)
                 {
-                    RequestId = r.RequestId,
-                    QueueNumber = r.QueueNumber,
-                    DocumentType = r.DocumentType,
-                    Purpose = r.Purpose,
-                    Quantity = r.Quantity,
-                    RequestDate = r.RequestDate,
-                    Status = r.Status,
-                    CompletedDate = r.CompletedDate,
-                    StudentName = user != null ? $"{user.FirstName} {user.LastName}" : "",
-                    StudentNumber = user?.StudentNumber ?? "",
-                    StudentEmail = user?.Email ?? "",
-                    TotalAmount = r.TotalAmount
-                };
-            }).ToList();
+                    var user = users.FirstOrDefault(u => u.UserId == r.UserId);
+
+                    // ✅ Skip if user is deleted or not found
+                    if (user == null)
+                    {
+                        // User not found - skip this request
+
+                        continue;
+                    }
+
+                    result.Add(new RequestWithUser
+                    {
+                        RequestId = r.RequestId,
+                        QueueNumber = r.QueueNumber,
+                        DocumentType = r.DocumentType,
+                        Purpose = r.Purpose,
+                        Quantity = r.Quantity,
+                        RequestDate = r.RequestDate,
+                        CompletedDate = r.CompletedDate,
+                        Status = r.Status,
+                        StudentName = $"{user.FirstName} {user.LastName}",
+                        StudentNumber = user.StudentNumber ?? "",
+                        StudentEmail = user.Email ?? "",
+                        TotalAmount = r.TotalAmount,
+                        // ✅ Department fields
+                        DepartmentId = user.DepartmentId,
+                        DepartmentCode = user.DepartmentCode ?? "N/A",
+                        DepartmentName = user.DepartmentName ?? "Unknown"
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Error loading requests with users
+                throw; // Re-throw the exception
+
+                return new List<RequestWithUser>();
+            }
         }
+
 
         public async Task<List<Payment>> GetAllPaymentsAsync()
         {
@@ -305,7 +338,76 @@ namespace ProjectCapstone.Services
             var result = await _documentRequests.UpdateOneAsync(filter, updateBuilder);
             return result.ModifiedCount > 0;
         }
+        // ========== DEPARTMENT METHODS ==========
+
+        // Get all active departments
+        public async Task<List<Department>> GetActiveDepartmentsAsync()
+        {
+            return await _departments.Find(d => d.IsActive).ToListAsync();
+        }
+
+        // Get department by ID
+        public async Task<Department?> GetDepartmentByIdAsync(int departmentId)
+        {
+            return await _departments.Find(d => d.DepartmentId == departmentId).FirstOrDefaultAsync();
+        }
+
+        // Seed initial departments
+        public async Task SeedDepartmentsAsync()
+        {
+            var count = await _departments.CountDocumentsAsync(_ => true);
+            if (count > 0) return; // Already seeded
+
+            var departments = new List<Department>
+    {
+        new Department
+        {
+            DepartmentId = 1,
+            DepartmentCode = "ITE",
+            DepartmentName = "Institute of Teacher Education",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        },
+        new Department
+        {
+            DepartmentId = 2,
+            DepartmentCode = "ICS",
+            DepartmentName = "Institute of Computer Studies",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        },
+        new Department
+        {
+            DepartmentId = 3,
+            DepartmentCode = "IEM",
+            DepartmentName = "Institute of Entrepreneurial Management",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        }
+    };
+
+            await _departments.InsertManyAsync(departments);
+        }
+
+        // Update user department
+        public async Task<bool> UpdateUserDepartmentAsync(int userId, int departmentId)
+        {
+            var department = await GetDepartmentByIdAsync(departmentId);
+            if (department == null) return false;
+
+            var filter = Builders<User>.Filter.Eq(u => u.UserId, userId);
+            var update = Builders<User>.Update
+                .Set(u => u.DepartmentId, departmentId)
+                .Set(u => u.DepartmentCode, department.DepartmentCode)
+                .Set(u => u.DepartmentName, department.DepartmentName);
+
+            var result = await _users.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
+        }
+
+
     }
+
 }
 
 // ================= HELPER CLASS =================
@@ -323,4 +425,7 @@ public class RequestWithUser
     public string StudentNumber { get; set; } = string.Empty;
     public string StudentEmail { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
+    public int? DepartmentId { get; set; }
+    public string DepartmentCode { get; set; } = string.Empty;
+    public string DepartmentName { get; set; } = string.Empty;
 }

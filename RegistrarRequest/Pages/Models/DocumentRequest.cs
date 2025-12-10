@@ -15,6 +15,16 @@ namespace ProjectCapstone.Models
         [BsonElement("userId")]
         public int UserId { get; set; }
 
+        [BsonElement("departmentId")]
+        public int? DepartmentId { get; set; }
+
+        [BsonElement("departmentCode")]
+        public string DepartmentCode { get; set; } = string.Empty;
+
+        [BsonElement("departmentName")]
+        public string DepartmentName { get; set; } = string.Empty;
+
+
         [BsonElement("documentTypeId")]
         public int DocumentTypeId { get; set; }
 
@@ -57,7 +67,8 @@ namespace ProjectCapstone.Models
         [BsonElement("notes")]
         public string? Notes { get; set; }
 
-      
+
+
 
     }
 }

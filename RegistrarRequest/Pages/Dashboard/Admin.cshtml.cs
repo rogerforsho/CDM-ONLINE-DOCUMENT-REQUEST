@@ -130,7 +130,11 @@ namespace ProjectCapstone.Pages.Dashboard
                     StudentName = r.StudentName,
                     StudentNumber = r.StudentNumber,
                     StudentEmail = r.StudentEmail,
-                    TotalAmount = r.TotalAmount
+                    TotalAmount = r.TotalAmount,
+                    // ✅ ADDED: Map department fields
+                    DepartmentId = r.DepartmentId,
+                    DepartmentCode = r.DepartmentCode ?? "N/A",
+                    DepartmentName = r.DepartmentName ?? "Unknown"
                 }).ToList();
 
                 // Apply filters
@@ -158,7 +162,7 @@ namespace ProjectCapstone.Pages.Dashboard
 
                 // Build CSV
                 var csv = new StringBuilder();
-                csv.AppendLine("Queue Number,Student Name,Student Number,Email,Document Type,Purpose,Quantity,Request Date,Status,Completed Date");
+                csv.AppendLine("Queue Number,Student Name,Student Number,Email,Department,Document Type,Purpose,Quantity,Request Date,Status,Completed Date");
 
                 foreach (var rec in recordsList)
                 {
@@ -166,6 +170,7 @@ namespace ProjectCapstone.Pages.Dashboard
                                   $"\"{rec.StudentName}\"," +
                                   $"{rec.StudentNumber}," +
                                   $"\"{rec.StudentEmail}\"," +
+                                  $"{rec.DepartmentCode}," + // ✅ ADDED
                                   $"\"{rec.DocumentType}\"," +
                                   $"\"{rec.Purpose}\"," +
                                   $"{rec.Quantity}," +
@@ -367,7 +372,11 @@ namespace ProjectCapstone.Pages.Dashboard
                     StudentName = r.StudentName,
                     StudentNumber = r.StudentNumber,
                     StudentEmail = r.StudentEmail,
-                    TotalAmount = r.TotalAmount
+                    TotalAmount = r.TotalAmount,
+                    // ✅ ADDED: Map department fields
+                    DepartmentId = r.DepartmentId,
+                    DepartmentCode = r.DepartmentCode ?? "N/A",
+                    DepartmentName = r.DepartmentName ?? "Unknown"
                 }).ToList();
 
             PendingDocuments = AllRequests.Where(r => r.Status == "Pending" || r.Status == "Processing").ToList();
@@ -396,7 +405,11 @@ namespace ProjectCapstone.Pages.Dashboard
                     StudentName = r.StudentName,
                     StudentNumber = r.StudentNumber,
                     StudentEmail = r.StudentEmail,
-                    TotalAmount = r.TotalAmount
+                    TotalAmount = r.TotalAmount,
+                    // ✅ ADDED: Map department fields
+                    DepartmentId = r.DepartmentId,
+                    DepartmentCode = r.DepartmentCode ?? "N/A",
+                    DepartmentName = r.DepartmentName ?? "Unknown"
                 }).ToList();
         }
 
@@ -652,6 +665,7 @@ namespace ProjectCapstone.Pages.Dashboard
 
     } // ← AdminModel class ends here
 
+    // ✅ UPDATED: AdminDocumentRequest with department fields
     public class AdminDocumentRequest
     {
         public int RequestId { get; set; }
@@ -666,6 +680,11 @@ namespace ProjectCapstone.Pages.Dashboard
         public string StudentNumber { get; set; } = string.Empty;
         public string StudentEmail { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
+
+        // ✅ ADDED: Department properties
+        public int? DepartmentId { get; set; }
+        public string DepartmentCode { get; set; } = string.Empty;
+        public string DepartmentName { get; set; } = string.Empty;
     }
 
     // ADDED: Payment verification helper class

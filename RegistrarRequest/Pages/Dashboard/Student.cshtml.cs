@@ -21,7 +21,7 @@ namespace ProjectCapstone.Pages.Dashboard
         public List<DocumentRequest> HistoryRequests { get; set; }
         public List<ProjectCapstone.Models.DocumentType> DocumentTypes { get; set; }
         public Dictionary<int, Payment?> RequestPayments { get; set; }
-
+        public User CurrentUser { get; set; } = new User();
 
         public StudentModel(MongoDBService mongoDBService, ILogger<StudentModel> logger)
         {
@@ -41,6 +41,13 @@ namespace ProjectCapstone.Pages.Dashboard
             {
                 return RedirectToPage("/Login");
             }
+            CurrentUser = await _mongoDBService.GetUserByIdAsync(userId.Value);
+
+            if (CurrentUser == null)
+            {
+                return RedirectToPage("/Login");
+            }
+
 
             FullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
             StudentNumber = HttpContext.Session.GetString("StudentNumber") ?? string.Empty;

@@ -30,6 +30,12 @@ namespace ProjectCapstone.Pages
         public string Email { get; set; } = string.Empty;
 
         [BindProperty]
+        public int DepartmentId { get; set; }
+
+        public List<Department> Departments { get; set; } = new();
+
+
+        [BindProperty]
         [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
@@ -63,19 +69,19 @@ namespace ProjectCapstone.Pages
             _logger = logger;
         }
 
-        public void OnGet()
+        
+
+        public async Task OnGetAsync()
         {
-            // Check if user is already logged in
-            if (HttpContext.Session.GetInt32("UserId") != null)
-            {
-                Response.Redirect("/Dashboard");
-            }
+            Departments = await _mongoDBService.GetActiveDepartmentsAsync();
         }
+
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
             {
+                Departments = await _mongoDBService.GetActiveDepartmentsAsync();
                 return Page();
             }
 
@@ -89,7 +95,7 @@ namespace ProjectCapstone.Pages
                 var existingStudentNumber = await _mongoDBService.GetUserByStudentNumberAsync(sanitizedStudentNumber);
                 if (existingStudentNumber != null)
                 {
-                    ErrorMessage = "Student number already registered.";
+                    Departments = await _mongoDBService.GetActiveDepartmentsAsync();
                     return Page();
                 }
 
@@ -97,9 +103,27 @@ namespace ProjectCapstone.Pages
                 var existingEmail = await _mongoDBService.GetUserByEmailAsync(sanitizedEmail);
                 if (existingEmail != null)
                 {
-                    ErrorMessage = "Email already registered.";
+                    Departments = await _mongoDBService.GetActiveDepartmentsAsync();
                     return Page();
                 }
+                var existingStudent = await _mongoDBService.GetUserByStudentNumberAsync(StudentNumber);
+                if (existingStudent != null)
+                {
+                    ModelState.AddModelError(string.Empty, "Student number already registered");
+                    Departments = await _mongoDBService.GetActiveDepartmentsAsync();
+                    return Page();
+                }
+
+                // Get department info
+                var department = await _mongoDBService.GetDepartmentByIdAsync(DepartmentId);
+                if (department == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid department selected");
+                    Departments = await _mongoDBService.GetActiveDepartmentsAsync();
+                    return Page();
+                }
+
+
 
                 // Hash password
                 var passwordHash = SecurityHelper.HashPassword(Password);
@@ -117,7 +141,11 @@ namespace ProjectCapstone.Pages
                     YearLevel = SecurityHelper.SanitizeInput(YearLevel ?? string.Empty),
                     Role = "Student",
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    DepartmentId = DepartmentId,
+                    DepartmentCode = (await _mongoDBService.GetDepartmentByIdAsync(DepartmentId))?.DepartmentCode ?? "",
+                    DepartmentName = (await _mongoDBService.GetDepartmentByIdAsync(DepartmentId))?.DepartmentName ?? "",
+
                 };
 
                 await _mongoDBService.CreateUserAsync(newUser);
