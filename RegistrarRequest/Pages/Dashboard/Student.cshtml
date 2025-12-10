@@ -634,11 +634,11 @@
                                             {
                                                 var buttonText = payment == null ? "Upload Payment" : "Re-upload Payment";
                                                 var buttonIcon = payment == null ? "fa-upload" : "fa-exclamation-circle";
-                                                <a href="/DocumentRequest/Payment?requestId=@request.RequestId"
+                                                <button onclick="showPaymentModal('@request.RequestId', '@request.QueueNumber', '@request.TotalAmount')"
                                                    class="btn btn-sm"
                                                    style="background: #dc3545; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">
                                                     <i class="fas @buttonIcon"></i> @buttonText
-                                                </a>
+                                                </button>
                                             }
                                             else if (payment.Status == "Pending Verification")
                                             {
@@ -903,9 +903,214 @@
         </div>
 
     </div>
+    </div> <!-- End of main-content -->
+    <!-- ✅ PAYMENT MODAL -->
+    <div id="paymentModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div class="modal-container" style="background: white; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="padding: 25px 30px; border-bottom: 2px solid #f5f7fa; display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="modal-title" style="font-size: 22px; font-weight: 700; color: #2d3748; margin: 0;">
+                    <i class="fas fa-credit-card"></i> Upload Payment Proof
+                </h3>
+                <button class="modal-close" onclick="closePaymentModal()" style="background: none; border: none; font-size: 28px; color: #718096; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>Queue Number:</strong> <span id="modal-queueNumber">N/A</span></p>
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>Amount to Pay:</strong> ₱<span id="modal-amount">0.00</span></p>
+                </div>
+
+                <form id="paymentForm" onsubmit="submitPayment(event)">
+                    <input type="hidden" id="modal-requestId" name="requestId">
+
+                    <div class="form-group">
+                        <label>Payment Method <span class="required">*</span></label>
+                        <select class="form-control-custom" id="paymentMethod" required>
+                            <option value="">Select payment method</option>
+                            <option value="GCash">GCash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cash">Cash (Pay at Office)</option>
+                        </select>
+                    </div>
+
+                    <!-- GCASH DETAILS -->
+                    <div id="gcash-details" style="display: none;">
+                        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="margin-bottom: 15px; color: #2d3748;">Scan GCash QR Code</h4>
+                            <img src="/images/gcash-qr-code.png" alt="GCash QR Code" style="max-width: 300px; width: 100%; height: auto; border: 3px solid #007bff; border-radius: 8px; margin-bottom: 15px;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjNmM3NTdkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UVIgQ29kZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+';" />
+                            <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Account Name:</strong> CDM Registrar Office</p>
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Mobile Number:</strong> 0917-123-4567</p>
+                                <p style="margin: 5px 0; font-size: 14px; color: #dc3545;"><strong>Amount:</strong> ₱<span id="gcash-amount">0.00</span></p>
+                            </div>
+                            <p style="margin-top: 15px; font-size: 13px; color: #6c757d;">
+                                <i class="fas fa-info-circle"></i> Scan the QR code using your GCash app or send to the mobile number above
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- BANK TRANSFER DETAILS -->
+                    <div id="bank-details" style="display: none;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="margin-bottom: 15px; color: #2d3748;">Bank Transfer Details</h4>
+                            <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <p style="margin: 8px 0; font-size: 14px;"><strong>Bank Name:</strong> BDO</p>
+                                <p style="margin: 8px 0; font-size: 14px;"><strong>Account Name:</strong> Colegio de Montalban</p>
+                                <p style="margin: 8px 0; font-size: 14px;"><strong>Account Number:</strong> 1234-5678-9012</p>
+                                <p style="margin: 8px 0; font-size: 14px; color: #dc3545;"><strong>Amount:</strong> ₱<span id="bank-amount">0.00</span></p>
+                            </div>
+                            <p style="margin-top: 15px; font-size: 13px; color: #6c757d;">
+                                <i class="fas fa-info-circle"></i> Please use your queue number as payment reference
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- CASH PAYMENT DETAILS -->
+                    <div id="cash-details" style="display: none;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="margin-bottom: 15px; color: #2d3748;">Cash Payment Instructions</h4>
+                            <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <p style="margin: 8px 0; font-size: 14px;"><i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> Registrar Office, Ground Floor</p>
+                                <p style="margin: 8px 0; font-size: 14px;"><i class="fas fa-clock"></i> <strong>Office Hours:</strong> Monday-Friday, 8:00 AM - 5:00 PM</p>
+                                <p style="margin: 8px 0; font-size: 14px; color: #dc3545;"><strong>Amount:</strong> ₱<span id="cash-amount">0.00</span></p>
+                            </div>
+                            <p style="margin-top: 15px; font-size: 13px; color: #6c757d;">
+                                <i class="fas fa-info-circle"></i> Please bring this queue number: <strong id="cash-queue">N/A</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Transaction Reference Number (Optional)</label>
+                        <input type="text" class="form-control-custom" id="referenceNumber" placeholder="Enter reference number if available">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Payment Proof <span class="required">*</span></label>
+                        <input type="file" class="form-control-custom" id="paymentProof" accept="image/*,.pdf" required>
+                        <small style="color: #6c757d; font-size: 12px; margin-top: 5px; display: block;">
+                            Accepted formats: JPG, PNG, PDF (Max 5MB)
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-check-circle"></i> Submit Payment
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="closePaymentModal()">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+        // ✅ Payment Modal Functions
+        function showPaymentModal(requestId, queueNumber, amount) {
+            document.getElementById('modal-requestId').value = requestId;
+            document.getElementById('modal-queueNumber').textContent = queueNumber;
+            document.getElementById('modal-amount').textContent = parseFloat(amount).toFixed(2);
+
+            // Update amounts in payment details
+            document.getElementById('gcash-amount').textContent = parseFloat(amount).toFixed(2);
+            document.getElementById('bank-amount').textContent = parseFloat(amount).toFixed(2);
+            document.getElementById('cash-amount').textContent = parseFloat(amount).toFixed(2);
+            document.getElementById('cash-queue').textContent = queueNumber;
+
+            // Reset form and hide all payment details
+            document.getElementById('paymentForm').reset();
+            document.getElementById('gcash-details').style.display = 'none';
+            document.getElementById('bank-details').style.display = 'none';
+            document.getElementById('cash-details').style.display = 'none';
+
+            // Show modal
+            document.getElementById('paymentModal').style.display = 'flex';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+            document.getElementById('paymentForm').reset();
+            document.getElementById('gcash-details').style.display = 'none';
+            document.getElementById('bank-details').style.display = 'none';
+            document.getElementById('cash-details').style.display = 'none';
+        }
+
+        // ✅✅✅ CRITICAL: Payment method dropdown handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethodSelect = document.getElementById('paymentMethod');
+
+            if (paymentMethodSelect) {
+                paymentMethodSelect.addEventListener('change', function() {
+                    console.log('Payment method changed to:', this.value);
+
+                    // Hide all payment details first
+                    document.getElementById('gcash-details').style.display = 'none';
+                    document.getElementById('bank-details').style.display = 'none';
+                    document.getElementById('cash-details').style.display = 'none';
+
+                    // Show the selected payment method details
+                    if (this.value === 'GCash') {
+                        document.getElementById('gcash-details').style.display = 'block';
+                    } else if (this.value === 'Bank Transfer') {
+                        document.getElementById('bank-details').style.display = 'block';
+                    } else if (this.value === 'Cash') {
+                        document.getElementById('cash-details').style.display = 'block';
+                    }
+                });
+            }
+        });
+
+        async function submitPayment(e) {
+            e.preventDefault();
+
+            const requestId = document.getElementById('modal-requestId').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const referenceNumber = document.getElementById('referenceNumber').value;
+            const paymentProof = document.getElementById('paymentProof').files[0];
+
+            if (!paymentProof) {
+                alert('Please upload payment proof');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('requestId', requestId);
+            formData.append('paymentMethod', paymentMethod);
+            formData.append('referenceNumber', referenceNumber);
+            formData.append('paymentProof', paymentProof);
+
+            try {
+                const submitBtn = document.querySelector('#paymentForm button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+                submitBtn.disabled = true;
+
+                const response = await fetch('/api/Payment/Upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('✅ Payment uploaded successfully!\nYour payment is now pending verification.');
+                    closePaymentModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    alert('❌ Error: ' + (result.message || 'Failed to upload payment'));
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Payment upload error:', error);
+                alert('❌ Network error: ' + error.message);
+                const submitBtn = document.querySelector('#paymentForm button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Payment';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Your existing functions below...
         function showSection(e, section) {
             e.preventDefault();
             document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
