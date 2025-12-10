@@ -30,6 +30,24 @@ namespace ProjectCapstone.Pages.Dashboard
 
         // ADDED: Property for pending payments
         public List<PaymentVerificationItem> PendingPayments { get; set; }
+        public Dictionary<string, DepartmentStats> DepartmentStatistics { get; set; }
+        public int ITECount { get; set; }
+        public int ICSCount { get; set; }
+        public int IEMCount { get; set; }
+
+
+        public class DepartmentStats
+        {
+            public string DepartmentCode { get; set; } = string.Empty;
+            public string DepartmentName { get; set; } = string.Empty;
+            public int TotalRequests { get; set; }
+            public int PendingRequests { get; set; }
+            public int ProcessingRequests { get; set; }
+            public int CompletedRequests { get; set; }
+            public string MostRequestedDocument { get; set; } = "N/A";
+            public int MostRequestedCount { get; set; }
+        }
+
 
         [TempData]
         public string SuccessMessage { get; set; } = string.Empty;
@@ -50,7 +68,56 @@ namespace ProjectCapstone.Pages.Dashboard
             // ADDED: Initialize PendingPayments
             PendingPayments = new List<PaymentVerificationItem>();
             AllPayments = new List<Payment>();
+            DepartmentStatistics = new Dictionary<string, DepartmentStats>();
         }
+
+        private void LoadDepartmentStatistics()
+        {
+            var departments = new[] { "ITE", "ICS", "IEM" };
+            var departmentNames = new Dictionary<string, string>
+    {
+        { "ITE", "Teacher Education" },
+        { "ICS", "Computer Studies" },
+        { "IEM", "Entrepreneurial Management" }
+    };
+
+            DepartmentStatistics.Clear();
+
+            foreach (var dept in departments)
+            {
+                var deptRequests = AllRequests.Where(r => r.DepartmentCode == dept).ToList();
+
+                var stats = new DepartmentStats
+                {
+                    DepartmentCode = dept,
+                    DepartmentName = departmentNames[dept],
+                    TotalRequests = deptRequests.Count,
+                    PendingRequests = deptRequests.Count(r => r.Status == "Pending"),
+                    ProcessingRequests = deptRequests.Count(r => r.Status == "Processing"),
+                    CompletedRequests = deptRequests.Count(r => r.Status == "Completed")
+                };
+
+                // Find most requested document for this department
+                var topDocument = deptRequests
+                    .GroupBy(r => r.DocumentType)
+                    .OrderByDescending(g => g.Count())
+                    .FirstOrDefault();
+
+                if (topDocument != null)
+                {
+                    stats.MostRequestedDocument = topDocument.Key;
+                    stats.MostRequestedCount = topDocument.Count();
+                }
+
+                DepartmentStatistics[dept] = stats;
+            }
+
+            // Set individual counts for chart
+            ITECount = DepartmentStatistics.GetValueOrDefault("ITE")?.TotalRequests ?? 0;
+            ICSCount = DepartmentStatistics.GetValueOrDefault("ICS")?.TotalRequests ?? 0;
+            IEMCount = DepartmentStatistics.GetValueOrDefault("IEM")?.TotalRequests ?? 0;
+        }
+
 
         public string GetDocumentTypesJson()
         {
@@ -94,6 +161,7 @@ namespace ProjectCapstone.Pages.Dashboard
                 // ADDED: Load pending payments
                 await LoadPendingPayments();
                 await LoadAllPayments();
+                LoadDepartmentStatistics();
             }
             catch (Exception ex)
             {
