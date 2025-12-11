@@ -1499,9 +1499,124 @@
             }, 300);
         }
 
-        function showDetails(requestId) {
-            alert('View Details for Request ID: ' + requestId);
+          function showDetails(requestId) {
+            console.log('🔍 Looking for RequestId:', requestId);
+
+            const cards = document.querySelectorAll('.document-card');
+            let foundCard = null;
+
+            cards.forEach((card, index) => {
+                const viewBtn = card.querySelector('button[onclick*="showDetails"]');
+                if (viewBtn) {
+                    const onclickAttr = viewBtn.getAttribute('onclick');
+                    const match = onclickAttr.match(/showDetails\((\d+)\)/);
+                    if (match && match[1] == requestId) {
+                        foundCard = card;
+                        console.log('✅ Found card at index:', index);
+                    }
+                }
+            });
+
+            if (!foundCard) {
+                alert('❌ Could not find request details!');
+                return;
+            }
+
+            // Extract data
+            const queueNumber = foundCard.querySelector('.queue-badge')?.textContent.trim() || 'N/A';
+            const documentType = foundCard.querySelector('.document-title')?.textContent.trim() || 'N/A';
+            const statusBadge = foundCard.querySelector('.main-status-badge span');
+            const status = statusBadge ? statusBadge.textContent.trim() : 'N/A';
+
+            // Get info items - FIXED VERSION
+            const infoItems = foundCard.querySelectorAll('.info-item');
+            let student = 'N/A', studentNumber = 'N/A', purpose = 'N/A', copies = 'N/A', requested = 'N/A', email = 'N/A';
+
+            infoItems.forEach(item => {
+                const text = item.textContent.trim();
+                const strongTag = item.querySelector('strong');
+
+                if (strongTag) {
+                    const label = strongTag.textContent.trim();
+                    const value = text.replace(label, '').trim();
+
+                    if (label.includes('Student')) student = value;
+                    else if (label.includes('ID')) studentNumber = value;
+                    else if (label.includes('Purpose')) purpose = value;
+                    else if (label.includes('Copies')) copies = value;
+                    else if (label.includes('Requested')) requested = value;
+                    else if (label.includes('Email')) email = value;
+                }
+            });
+
+            console.log('📊 Data:', { queueNumber, documentType, student, studentNumber, email, purpose, copies, status, requested });
+
+            // Create modal
+            const modalHTML = `
+                <div id="detailsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <div style="background: white; border-radius: 15px; max-width: 500px; width: 100%; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f5f7fa;">
+                            <h3 style="margin: 0; color: #2d3748; font-size: 20px; font-weight: 700;">
+                                <i class="fas fa-file-alt"></i> Request Details
+                            </h3>
+                            <button onclick="closeDetailsModal()" style="background: none; border: none; font-size: 28px; color: #718096; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                            <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 18px; font-weight: 700;">${documentType}</h4>
+                            <span style="background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%); color: white; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block;">
+                                ${queueNumber}
+                            </span>
+                        </div>
+
+                        <div style="display: grid; gap: 15px;">
+                            <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Student Name</strong>
+                                <p style="margin: 0; color: #2d3748; font-weight: 600; font-size: 15px;">${student}</p>
+                            </div>
+                            <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Student Number</strong>
+                                <p style="margin: 0; color: #2d3748; font-size: 14px;">${studentNumber}</p>
+                            </div>
+                            <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Email</strong>
+                                <p style="margin: 0; color: #2d3748; font-size: 14px;">${email}</p>
+                            </div>
+                            <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Purpose</strong>
+                                <p style="margin: 0; color: #2d3748; font-size: 14px;">${purpose}</p>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                    <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Copies</strong>
+                                    <p style="margin: 0; color: #2d3748; font-weight: 600; font-size: 14px;">${copies}</p>
+                                </div>
+                                <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                    <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Status</strong>
+                                    <p style="margin: 0; color: #2d3748; font-weight: 600; font-size: 14px;">${status}</p>
+                                </div>
+                            </div>
+                            <div style="border-left: 3px solid #0d5c2f; padding-left: 12px;">
+                                <strong style="color: #718096; font-size: 12px; display: block; margin-bottom: 5px; text-transform: uppercase;">Requested Date</strong>
+                                <p style="margin: 0; color: #2d3748; font-size: 14px;">${requested}</p>
+                            </div>
+                        </div>
+
+                        <button onclick="closeDetailsModal()" style="width: 100%; margin-top: 25px; padding: 14px; background: linear-gradient(135deg, #0d5c2f 0%, #1a8f4f 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <i class="fas fa-times-circle"></i> Close
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
+
+        function closeDetailsModal() {
+            const modal = document.getElementById('detailsModal');
+            if (modal) modal.remove();
+        }
+
     </script>
 </body>
 </html>
