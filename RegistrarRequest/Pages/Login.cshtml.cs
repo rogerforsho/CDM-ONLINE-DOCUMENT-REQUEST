@@ -58,13 +58,24 @@ namespace ProjectCapstone.Pages
             {
                 var sanitizedInput = SecurityHelper.SanitizeInput(StudentNumber);
 
-                // Find user by student number or email
+                // ✅ Find user by student number OR email
                 var user = await _mongoDBService.GetUserByStudentNumberOrEmailAsync(sanitizedInput);
 
                 if (user == null)
                 {
                     ErrorMessage = "Invalid student number/email or password.";
                     _logger.LogWarning($"Failed login attempt for: {sanitizedInput}");
+                    return Page();
+                }
+
+                // ✅✅✅ CRITICAL FIX: Verify the input matches either StudentNumber OR Email
+                bool isInputValid = user.StudentNumber.Equals(sanitizedInput, StringComparison.OrdinalIgnoreCase) ||
+                                   user.Email.Equals(sanitizedInput, StringComparison.OrdinalIgnoreCase);
+
+                if (!isInputValid)
+                {
+                    ErrorMessage = "Invalid student number/email or password.";
+                    _logger.LogWarning($"Login input mismatch for user: {user.UserId}");
                     return Page();
                 }
 
@@ -136,5 +147,6 @@ namespace ProjectCapstone.Pages
                 return Page();
             }
         }
+
     }
 }
